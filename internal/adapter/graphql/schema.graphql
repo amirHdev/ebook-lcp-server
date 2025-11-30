@@ -1,0 +1,44 @@
+type Publication {
+    id: ID!
+    title: String!
+    filePath: String!
+    encryptedPath: String
+    createdAt: String!
+    downloadURL: String!
+}
+
+type License {
+    id: ID!
+    publicationID: ID!
+    userID: ID!
+    passphrase: String!
+    hint: String!
+    publicationURL: String!
+    rightPrint: Int
+    rightCopy: Int
+    startDate: String
+    endDate: String
+    createdAt: String!
+}
+
+type Query {
+    publications: [Publication!]!
+    licenses(publicationID: ID): [License!]!
+}
+
+type Mutation {
+    uploadPublication(title: String!, file: Upload!): Publication!
+    createLicense(
+        publicationID: ID!
+        userID: ID!
+        passphrase: String!
+        hint: String!
+        rightPrint: Int
+        rightCopy: Int
+        startDate: String
+        endDate: String
+    ): License!
+    revokeLicense(id: ID!): Boolean!
+}
+
+scalar Upload

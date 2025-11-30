@@ -1,0 +1,41 @@
+profile: basic
+lcp:
+  host: "0.0.0.0"
+  port: 8989
+  public_base_url: "http://localhost:8989"
+  auth_file: "/Users/mehrbod/projects/golang/lcp/internal/config/htpasswd"
+  database: "sqlite3://file:/Users/mehrbod/projects/golang/lcp/lcpdb/lcp.sqlite?cache=shared&mode=rwc"
+  cert_date: "2025-01-01"
+lsd:
+  host: "0.0.0.0"
+  port: 8990
+  public_base_url: "http://localhost:8990"
+  auth_file: "/Users/mehrbod/projects/golang/lcp/internal/config/htpasswd"
+  database: "sqlite3://file:/Users/mehrbod/projects/golang/lcp/lcpdb/lsd.sqlite?cache=shared&mode=rwc"
+frontend:
+  host: "0.0.0.0"
+  port: 8991
+  database: "sqlite3://file:/Users/mehrbod/projects/golang/lcp/lcpdb/frontend.sqlite?cache=shared&mode=rwc"
+  master_repository: "/Users/mehrbod/projects/golang/lcp/files/master"
+  encrypted_repository: "/Users/mehrbod/projects/golang/lcp/files/encrypted"
+  provider_uri: "https://yourplatform.com"
+  right_print: 10
+  right_copy: 2000
+  lcp_update_auth:
+    username: "admin"
+    password: "admin_pass"
+  lsd_notify_auth:
+    username: "admin"
+    password: "admin_pass"
+storage:
+  filesystem:
+    directory: "/Users/mehrbod/projects/golang/lcp/files/encrypted"
+certificate:
+  cert: "/Users/mehrbod/projects/golang/lcp/internal/config/cert-edrlab-test.pem"
+  private_key: "/Users/mehrbod/projects/golang/lcp/internal/config/privkey-edrlab-test.pem"
+links:
+  status: "http://localhost:8990/licenses/{license_id}/status"
+  hint: "https://yourplatform.com/passphrase-help"
+  publication: "http://localhost:8989/publications/{publication_id}"
+localization:
+  languages: ["en"]

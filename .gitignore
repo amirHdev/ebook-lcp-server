@@ -1,0 +1,36 @@
+# Build artifacts
+/bin/
+/dist/
+/coverage/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.cover
+*.log
+
+# IDE/editor
+.vscode/
+.idea/
+*.swp
+
+# Dependencies & vendors
+vendor/
+
+# Runtime
+.env
+*.sqlite
+*.db
+
+# Cache
+**/*wal
+**/*shm
+
+# TLS material
+*.pem
+*.key

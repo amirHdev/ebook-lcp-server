@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lcp-server
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Mehrbod2002/lcp.git
+    targetRevision: HEAD
+    path: deploy/k8s
+    kustomize: {}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lcp
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

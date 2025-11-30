@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lcp-server
+  labels:
+    app: lcp-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: lcp-server
+  template:
+    metadata:
+      labels:
+        app: lcp-server
+    spec:
+      containers:
+        - name: lcp-server
+          image: registry.example.com/lcp/lcp-server:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SERVER_PORT
+              value: ":8080"
+            - name: LCP_STORAGE_MODE
+              value: "fs"
+            - name: LCP_STORAGE_FS_DIR
+              value: "/var/lib/lcp/storage"
+            - name: LCP_PROFILE
+              value: "production"
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          volumeMounts:
+            - name: storage
+              mountPath: /var/lib/lcp/storage
+      volumes:
+        - name: storage
+          emptyDir: {}

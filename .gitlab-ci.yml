@@ -1,0 +1,62 @@
+stages:
+  - lint
+  - test
+  - build
+  - deploy
+
+variables:
+  GO_VERSION: "1.22"
+  REGISTRY_IMAGE: "$CI_REGISTRY_IMAGE/lcp-server"
+
+lint:
+  stage: lint
+  image: golang:${GO_VERSION}
+  script:
+    - gofmt -l . | tee /tmp/gofmt.out
+    - test ! -s /tmp/gofmt.out
+    - go vet ./...
+  cache:
+    paths:
+      - /go/pkg/mod
+
+test:
+  stage: test
+  image: golang:${GO_VERSION}
+  script:
+    - go test ./...
+  cache:
+    paths:
+      - /go/pkg/mod
+
+build-image:
+  stage: build
+  image: docker:24
+  services:
+    - name: docker:24-dind
+      command: ["--mtu=1460"]
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker build -t "$REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" .
+    - |
+      if [ -n "$CI_REGISTRY_USER" ]; then
+        echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+        docker push "$REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+      else
+        echo "CI registry credentials not provided; skipping push."
+      fi
+  needs:
+    - job: test
+      artifacts: false
+
+kubectl-deploy:
+  stage: deploy
+  image: bitnami/kubectl:1.30
+  script:
+    - kubectl version --client
+    - kubectl apply -k deploy/k8s
+  environment:
+    name: production
+  only:
+    - main
+  dependencies: []

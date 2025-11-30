@@ -1,0 +1,12 @@
+.git
+bin
+dist
+coverage
+vendor
+**/*.sqlite
+**/*.db
+**/*.pem
+**/*.key
+Dockerfile
+.dockerignore
+.env
