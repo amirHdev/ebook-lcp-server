@@ -17,6 +17,7 @@ labels:
   - pairs:
       environment: prod
 patches:
+  - path: patch-deployments.yaml
   - path: patch-configmap.yaml
   - path: patch-ingress.yaml
   - path: patch-hpa.yaml
