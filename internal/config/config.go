@@ -33,6 +33,10 @@ type Config struct {
 		Secret       string
 		Admin2FACode string
 	}
+	Admin struct {
+		Username string
+		Password string
+	}
 	Server struct {
 		Port          string
 		PublicBaseURL string
@@ -59,6 +63,8 @@ func LoadConfig() (*Config, error) {
 	cfg.LCP.Storage.S3.SecretKey = os.Getenv("LCP_S3_SECRET_KEY")
 	cfg.JWT.Secret = os.Getenv("JWT_SECRET")
 	cfg.JWT.Admin2FACode = os.Getenv("ADMIN_2FA_CODE")
+	cfg.Admin.Username = os.Getenv("ADMIN_USERNAME")
+	cfg.Admin.Password = os.Getenv("ADMIN_PASSWORD")
 	cfg.Server.Port = os.Getenv("SERVER_PORT")
 	cfg.Server.PublicBaseURL = os.Getenv("PUBLIC_BASE_URL")
 	cfg.Server.StatusBaseURL = os.Getenv("STATUS_BASE_URL")

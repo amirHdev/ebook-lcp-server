@@ -12,7 +12,7 @@ images:
     newTag: staging
   - name: registry.example.com/lcp/lcp-admin-ui
     newName: registry.testmedical.ir:5000/lcp-admin-ui
-    newTag: staging
+    newTag: staging-v2
 labels:
   - pairs:
       environment: staging

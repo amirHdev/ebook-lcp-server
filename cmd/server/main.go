@@ -63,8 +63,11 @@ func main() {
 	licUsecase := license.NewLicenseUsecase(licRepo, lcpSrv, publicBaseURL)
 	authn := auth.New(cfg.JWT.Secret, cfg.JWT.Admin2FACode)
 	restHandler := rest.NewHandler(pubUsecase)
+	authHandler := rest.NewAuthHandler(cfg.JWT.Secret, cfg.Admin.Username, cfg.Admin.Password, cfg.JWT.Admin2FACode)
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1/auth/login", authHandler.Login)
+	mux.HandleFunc("/api/v1/auth/ping", authHandler.Ping)
 	mux.HandleFunc("/healthz", restHandler.Healthz)
 	mux.HandleFunc("/readyz", restHandler.Readyz)
 	mux.HandleFunc("/metrics", restHandler.PrometheusMetrics)

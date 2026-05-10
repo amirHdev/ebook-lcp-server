@@ -37,6 +37,16 @@ spec:
                 secretKeyRef:
                   name: lcp-secrets
                   key: admin-2fa-code
+            - name: ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: lcp-secrets
+                  key: admin-username
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: lcp-secrets
+                  key: admin-password
             - name: LCP_CORE_USER
               valueFrom:
                 secretKeyRef:

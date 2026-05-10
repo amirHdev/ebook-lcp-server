@@ -1,6 +1,31 @@
 # LCP Server User Manual
 
-## Process Content
+## Sign In
+
+`POST /api/v1/auth/login`
+
+Body:
+
+```json
+{
+  "username": "amiradmin",
+  "password": "<admin password>",
+  "twoFactor": "<2fa code>"
+}
+```
+
+Response:
+
+```json
+{
+  "token": "<jwt>",
+  "role": "admin",
+  "subject": "amiradmin",
+  "expiresAt": "2026-05-16T00:00:00Z"
+}
+```
+
+## Upload And Process
 
 `POST /api/v1/lcp/process`
 
@@ -31,6 +56,8 @@ Response:
   "updatedAt": "2026-05-09T00:00:00Z"
 }
 ```
+
+The dashboard now provides a file picker. It reads the selected publication file in the browser, base64-encodes it, and sends it to this endpoint.
 
 ## Check Status
 

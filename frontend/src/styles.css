@@ -91,6 +91,39 @@ textarea {
   resize: vertical;
 }
 
+.file-picker {
+  display: grid;
+  gap: 10px;
+}
+
+.file-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  margin: 0;
+  border: 1px solid #c7d2d9;
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: #fbfcfd;
+  color: #172026;
+  cursor: pointer;
+}
+
+.file-button input {
+  display: none;
+}
+
+.file-meta {
+  min-height: 20px;
+  color: #5b6770;
+  font-size: 13px;
+}
+
+.auth-panel {
+  display: grid;
+}
+
 button {
   justify-content: center;
   gap: 8px;
@@ -140,6 +173,10 @@ button {
   margin: 0 0 12px;
   color: #176b87;
   font-weight: 700;
+}
+
+.message:empty {
+  display: none;
 }
 
 .table {

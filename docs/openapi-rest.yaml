@@ -7,6 +7,35 @@ servers:
 security:
   - bearerAuth: []
 paths:
+  /api/v1/auth/login:
+    post:
+      summary: Sign in and mint a JWT for the admin dashboard
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                twoFactor:
+                  type: string
+      responses:
+        "200":
+          description: JWT token response
+        "400":
+          description: Invalid payload
+        "401":
+          description: Invalid username or password
+        "403":
+          description: Invalid 2FA code
   /api/v1/lcp/process:
     post:
       summary: Process LCP input data or an uploaded publication

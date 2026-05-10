@@ -124,6 +124,22 @@ func ParseBearerToken(token, secret string) (*Claims, error) {
 	return &claims, nil
 }
 
+func IssueBearerToken(secret string, claims Claims) (string, error) {
+	if secret == "" {
+		return "", errors.New("jwt secret is not configured")
+	}
+	header, err := json.Marshal(map[string]string{"alg": "HS256", "typ": "JWT"})
+	if err != nil {
+		return "", err
+	}
+	payload, err := json.Marshal(claims)
+	if err != nil {
+		return "", err
+	}
+	signingInput := base64.RawURLEncoding.EncodeToString(header) + "." + base64.RawURLEncoding.EncodeToString(payload)
+	return signingInput + "." + sign(signingInput, secret), nil
+}
+
 func roleAllowed(claims *Claims, allowed map[string]struct{}) bool {
 	if len(allowed) == 0 {
 		return true
