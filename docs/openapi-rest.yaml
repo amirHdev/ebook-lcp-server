@@ -271,6 +271,12 @@ paths:
       operationId: listAdminUsers
       security:
         - bearerAuth: []
+      parameters:
+        - name: X-2FA-Code
+          in: header
+          required: false
+          schema:
+            type: string
       responses:
         "200":
           description: User list
@@ -289,6 +295,11 @@ paths:
       security:
         - bearerAuth: []
       parameters:
+        - name: X-2FA-Code
+          in: header
+          required: false
+          schema:
+            type: string
         - name: userId
           in: path
           required: true
@@ -314,6 +325,11 @@ paths:
       security:
         - bearerAuth: []
       parameters:
+        - name: X-2FA-Code
+          in: header
+          required: false
+          schema:
+            type: string
         - name: userId
           in: path
           required: true

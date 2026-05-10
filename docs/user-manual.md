@@ -126,14 +126,17 @@ The response includes uptime, process count, and request counters.
 `GET /api/v1/admin/users`
 
 Returns the admin-visible user list.
+This endpoint requires `Authorization: Bearer <admin-jwt>` and `X-2FA-Code`.
 
 `POST /api/v1/admin/users/{userId}/verify`
 
 Marks a user verified.
+This endpoint also requires `X-2FA-Code`.
 
 `POST /api/v1/admin/users/{userId}/unverify`
 
 Marks a user unverified.
+This endpoint also requires `X-2FA-Code`.
 
 ## API Docs
 

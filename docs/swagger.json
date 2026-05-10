@@ -451,6 +451,16 @@
             "bearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "X-2FA-Code",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "User list",
@@ -481,6 +491,14 @@
           }
         ],
         "parameters": [
+          {
+            "name": "X-2FA-Code",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "userId",
             "in": "path",
@@ -523,6 +541,14 @@
           }
         ],
         "parameters": [
+          {
+            "name": "X-2FA-Code",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "userId",
             "in": "path",

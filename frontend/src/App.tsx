@@ -158,7 +158,9 @@ function App() {
   }
 
   async function refreshAdminUsers() {
-    const response = await fetch(`${API_BASE}/api/v1/admin/users`, { headers: authHeaders });
+    const response = await fetch(`${API_BASE}/api/v1/admin/users`, {
+      headers: { ...authHeaders, "X-2FA-Code": twoFactor }
+    });
     const body = await response.json();
     if (!response.ok) throw new Error(body.error || "users request failed");
     const payload = body as AdminUsersResponse;
@@ -257,7 +259,7 @@ function App() {
       `${API_BASE}/api/v1/admin/users/${userId}/${verified ? "verify" : "unverify"}`,
       {
         method: "POST",
-        headers: authHeaders
+        headers: { ...authHeaders, "X-2FA-Code": twoFactor }
       }
     );
     const body = await response.json();

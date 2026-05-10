@@ -91,11 +91,22 @@ func recoverEncryptedPath(outputDir, contentID, inputPath, output string) (strin
 	if !strings.Contains(output, "Error notifying the LCP Server") && !strings.Contains(output, "connect: connection refused") {
 		return "", false
 	}
-	candidates := []string{
-		filepath.Join(outputDir, contentID+filepath.Ext(inputPath)),
-		filepath.Join(outputDir, contentID+".lcpdf"),
-		filepath.Join(outputDir, contentID+".epub"),
-		filepath.Join(outputDir, contentID+".lcp"),
+	dirs := []string{
+		outputDir,
+		"/var/lib/lcp/storage",
+		filepath.Join(filepath.Dir(inputPath), "storage"),
+	}
+	candidates := []string{}
+	for _, dir := range dirs {
+		if strings.TrimSpace(dir) == "" {
+			continue
+		}
+		candidates = append(candidates,
+			filepath.Join(dir, contentID+filepath.Ext(inputPath)),
+			filepath.Join(dir, contentID+".lcpdf"),
+			filepath.Join(dir, contentID+".epub"),
+			filepath.Join(dir, contentID+".lcp"),
+		)
 	}
 	for _, candidate := range candidates {
 		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
