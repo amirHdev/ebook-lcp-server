@@ -264,3 +264,38 @@ button {
     margin-bottom: 14px;
   }
 }
+
+.license-row {
+  grid-template-columns: minmax(210px, 1fr) minmax(210px, 1fr) minmax(240px, 1fr) minmax(180px, 0.8fr);
+  min-width: 980px;
+}
+
+.license-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.license-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border-radius: 6px;
+  padding: 0 10px;
+  color: #176b87;
+  background: #e8f3f7;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.small-button {
+  display: inline-flex;
+  min-height: 28px;
+  width: fit-content;
+  margin-top: 6px;
+  padding: 0 10px;
+  font-size: 12px;
+  background: #43515a;
+}

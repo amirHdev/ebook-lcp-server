@@ -78,7 +78,7 @@ type License = {
   rightCopy?: number | null;
   startDate?: string | null;
   endDate?: string | null;
-  createdAt: string;
+  createdAt?: string;
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
@@ -115,6 +115,7 @@ function App() {
   const [licenseEndDate, setLicenseEndDate] = useState("");
   const [publications, setPublications] = useState<Publication[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [createdLicenses, setCreatedLicenses] = useState<License[]>([]);
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
   const [message, setMessage] = useState("");
@@ -285,7 +286,7 @@ function App() {
       headers: authHeaders,
       body: JSON.stringify({
         query:
-          "mutation CreateLicense($publicationID: ID!, $userID: ID!, $passphrase: String!, $hint: String!, $rightPrint: Int, $rightCopy: Int, $startDate: String, $endDate: String) { createLicense(publicationID: $publicationID, userID: $userID, passphrase: $passphrase, hint: $hint, rightPrint: $rightPrint, rightCopy: $rightCopy, startDate: $startDate, endDate: $endDate) { id publicationID publicationURL passphrase hint rightPrint rightCopy startDate endDate } }",
+          "mutation CreateLicense($publicationID: ID!, $userID: ID!, $passphrase: String!, $hint: String!, $rightPrint: Int, $rightCopy: Int, $startDate: String, $endDate: String) { createLicense(publicationID: $publicationID, userID: $userID, passphrase: $passphrase, hint: $hint, rightPrint: $rightPrint, rightCopy: $rightCopy, startDate: $startDate, endDate: $endDate) { id publicationID userID publicationURL passphrase hint rightPrint rightCopy startDate endDate createdAt } }",
           variables: {
           publicationID: licensePublicationId.trim(),
           userID: licenseUserId.trim(),
@@ -307,6 +308,7 @@ function App() {
     if (!created) {
       throw new Error("license request failed");
     }
+    setCreatedLicenses((items) => [created, ...items]);
     setMessage(`License ${created.id} created for ${created.publicationID}`);
   }
 
@@ -348,6 +350,31 @@ function App() {
     const file = event.target.files?.[0] || null;
     setCatalogFile(file);
     setCatalogFilePreview(file ? `${file.name} · ${file.type || "unknown type"} · ${Math.ceil(file.size / 1024)} KiB` : "Choose a publication file for the catalog.");
+  }
+
+  function publicBaseUrl() {
+    return window.location.origin;
+  }
+
+  function licenseLcplUrl(licenseId: string) {
+    return `${publicBaseUrl()}/licenses/${licenseId}.lcpl`;
+  }
+
+  function licenseUserDataUrl(licenseId: string) {
+    return `${publicBaseUrl()}/api/v1/licenses/${licenseId}/user`;
+  }
+
+  function licenseStatusUrl(licenseId: string) {
+    return `https://status.testmedical.ir/licenses/${licenseId}/status`;
+  }
+
+  function publicationLcpdfUrl(publicationId: string) {
+    return `${publicBaseUrl()}/publications/${publicationId}.lcpdf`;
+  }
+
+  async function copyText(value: string) {
+    await navigator.clipboard.writeText(value);
+    setMessage("Copied to clipboard");
   }
 
   async function run(action: () => Promise<void>) {
@@ -628,6 +655,71 @@ function App() {
             <div className="file-meta">Use this form to issue a license for the selected publication. The button in the catalog row fills the publication and rights fields for you.</div>
           </div>
         </div>
+      </section>
+
+      <section className="panel">
+        <div className="section-head">
+          <h2><KeyRound size={18} /> Created Licenses</h2>
+          <button onClick={() => setCreatedLicenses([])} disabled={createdLicenses.length === 0}>
+            Clear
+          </button>
+        </div>
+
+        {createdLicenses.length === 0 && (
+          <div className="file-meta">No licenses created in this browser session yet.</div>
+        )}
+
+        {createdLicenses.length > 0 && (
+          <div className="table">
+            <div className="row header license-row">
+              <span>License</span>
+              <span>Publication</span>
+              <span>User / Passphrase</span>
+              <span>Links</span>
+            </div>
+
+            {createdLicenses.map((license) => {
+              const lcplUrl = licenseLcplUrl(license.id);
+              const lcpdfUrl = publicationLcpdfUrl(license.publicationID);
+              const statusUrl = licenseStatusUrl(license.id);
+              const userUrl = licenseUserDataUrl(license.id);
+
+              return (
+                <div className="row license-row" key={license.id}>
+                  <span className="cell-clip">
+                    <strong>{license.id}</strong>
+                    <br />
+                    <button className="small-button" onClick={() => void copyText(license.id)}>Copy ID</button>
+                  </span>
+
+                  <span className="cell-clip">
+                    {license.publicationID}
+                    <br />
+                    <button className="small-button" onClick={() => void copyText(license.publicationID)}>Copy Pub ID</button>
+                  </span>
+
+                  <span className="cell-clip">
+                    user: {license.userID}
+                    <br />
+                    pass: {license.passphrase}
+                    <br />
+                    hint: {license.hint || "-"}
+                    <br />
+                    <button className="small-button" onClick={() => void copyText(license.passphrase)}>Copy Passphrase</button>
+                  </span>
+
+                  <span className="license-links">
+                    <a href={lcplUrl} target="_blank" rel="noreferrer">LCPL</a>
+                    <a href={lcpdfUrl} target="_blank" rel="noreferrer">LCPDF</a>
+                    <a href={statusUrl} target="_blank" rel="noreferrer">Status</a>
+                    <a href={userUrl} target="_blank" rel="noreferrer">User API</a>
+                    <button className="small-button" onClick={() => void copyText(lcplUrl)}>Copy Reader Link</button>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <section className="panel">

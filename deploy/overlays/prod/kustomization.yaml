@@ -12,7 +12,7 @@ images:
     newTag: prod-v20
   - name: registry.example.com/lcp/lcp-admin-ui
     newName: registry.testmedical.ir:5000/lcp-admin-ui
-    newTag: prod
+    newTag: prod-v20
 labels:
   - pairs:
       environment: prod
