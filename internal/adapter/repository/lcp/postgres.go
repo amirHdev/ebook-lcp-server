@@ -81,8 +81,6 @@ func EnsurePostgresSchema(ctx context.Context, db *sql.DB) error {
 			start_date TIMESTAMP,
 			end_date TIMESTAMP,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			FOREIGN KEY (publication_id) REFERENCES publications(id),
-			FOREIGN KEY (user_id) REFERENCES users(id)
 		)`,
 		`CREATE TABLE IF NOT EXISTS lcp_processes (
 			id VARCHAR(36) PRIMARY KEY,
@@ -104,6 +102,8 @@ func EnsurePostgresSchema(ctx context.Context, db *sql.DB) error {
 		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS checksum TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS license_duration_days INTEGER NOT NULL DEFAULT 30`,
 		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`,
+		`ALTER TABLE licenses DROP CONSTRAINT IF EXISTS licenses_publication_id_fkey`,
+		`ALTER TABLE licenses DROP CONSTRAINT IF EXISTS licenses_user_id_fkey`,
 	}
 	for _, stmt := range stmts {
 		if _, err := db.ExecContext(ctx, stmt); err != nil {
