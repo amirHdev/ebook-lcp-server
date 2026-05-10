@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: lcp-prod
 resources:
   - ../../k8s
+  - ../../k8s/status-ingress.yaml
 images:
   - name: registry.example.com/lcp/lcp-server
     newName: registry.testmedical.ir:5000/lcp-server

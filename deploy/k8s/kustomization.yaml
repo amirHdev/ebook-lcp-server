@@ -19,7 +19,6 @@ resources:
   - readium-core-configmap.yaml
   - readium-core-pvc.yaml
   - readium-core-secret.yaml
-  - status-ingress.yaml
 labels:
   - pairs:
       component: lcp-server
