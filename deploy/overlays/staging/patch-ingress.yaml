@@ -32,6 +32,13 @@ spec:
                 name: lcp-server
                 port:
                   number: 80
+          - path: /licenses
+            pathType: Prefix
+            backend:
+              service:
+                name: lcp-server
+                port:
+                  number: 80
           - path: /
             pathType: Prefix
             backend:

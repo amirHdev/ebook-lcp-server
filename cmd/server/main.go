@@ -98,7 +98,7 @@ func main() {
 		PublicBaseURL:      publicBaseURL,
 	})
 	mux.Handle("/graphql", authn.RequireRole("admin", "publisher", "user")(gqlHandler))
-	mux.Handle("/publications/", authn.RequireRole("admin", "publisher", "user", "guest")(publicationDownloadHandler(pubUsecase)))
+	mux.Handle("/publications/", publicationDownloadHandler(pubUsecase))
 
 	port := cfg.Server.Port
 	if port == "" {
