@@ -75,6 +75,26 @@ Marks a publication active.
 
 Marks a publication inactive.
 
+## Issue License
+
+Use the `License Issuance` panel in the admin UI, or call the GraphQL mutation directly.
+
+GraphQL example:
+
+```json
+{
+  "query": "mutation CreateLicense($publicationID: ID!, $userID: ID!, $passphrase: String!, $hint: String!, $rightPrint: Int, $rightCopy: Int) { createLicense(publicationID: $publicationID, userID: $userID, passphrase: $passphrase, hint: $hint, rightPrint: $rightPrint, rightCopy: $rightCopy) { id publicationID publicationURL rightPrint rightCopy } }",
+  "variables": {
+    "publicationID": "41740870466d8962468078d3effe8f8e",
+    "userID": "reader-01",
+    "passphrase": "demo-passphrase",
+    "hint": "demo",
+    "rightPrint": 10,
+    "rightCopy": 2000
+  }
+}
+```
+
 ## Upload And Process
 
 `POST /api/v1/lcp/process`

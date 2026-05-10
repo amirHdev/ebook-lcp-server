@@ -67,6 +67,20 @@ type AdminUsersResponse = {
   users: AdminUser[];
 };
 
+type License = {
+  id: string;
+  publicationID: string;
+  userID: string;
+  passphrase: string;
+  hint: string;
+  publicationURL: string;
+  rightPrint?: number | null;
+  rightCopy?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  createdAt: string;
+};
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
 function App() {
@@ -91,6 +105,14 @@ function App() {
   const [catalogLicenseDays, setCatalogLicenseDays] = useState("30");
   const [catalogFile, setCatalogFile] = useState<File | null>(null);
   const [catalogFilePreview, setCatalogFilePreview] = useState("Choose a publication file for the catalog.");
+  const [licensePublicationId, setLicensePublicationId] = useState("");
+  const [licenseUserId, setLicenseUserId] = useState("reader-01");
+  const [licensePassphrase, setLicensePassphrase] = useState("");
+  const [licenseHint, setLicenseHint] = useState("demo");
+  const [licenseRightPrint, setLicenseRightPrint] = useState("");
+  const [licenseRightCopy, setLicenseRightCopy] = useState("");
+  const [licenseStartDate, setLicenseStartDate] = useState("");
+  const [licenseEndDate, setLicenseEndDate] = useState("");
   const [publications, setPublications] = useState<Publication[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [status, setStatus] = useState<StatusResponse | null>(null);
@@ -246,6 +268,47 @@ function App() {
     await refreshPublications();
   }
 
+  async function issueLicense() {
+    if (!licensePublicationId.trim()) {
+      throw new Error("choose a publication first");
+    }
+    if (!licenseUserId.trim()) {
+      throw new Error("user id is required");
+    }
+    if (!licensePassphrase.trim()) {
+      throw new Error("passphrase is required");
+    }
+
+    const response = await fetch(`${API_BASE}/graphql`, {
+      method: "POST",
+      headers: authHeaders,
+      body: JSON.stringify({
+        query:
+          "mutation CreateLicense($publicationID: ID!, $userID: ID!, $passphrase: String!, $hint: String!, $rightPrint: Int, $rightCopy: Int, $startDate: String, $endDate: String) { createLicense(publicationID: $publicationID, userID: $userID, passphrase: $passphrase, hint: $hint, rightPrint: $rightPrint, rightCopy: $rightCopy, startDate: $startDate, endDate: $endDate) { id publicationID publicationURL passphrase hint rightPrint rightCopy startDate endDate } }",
+        variables: {
+          publicationID: licensePublicationId.trim(),
+          userID: licenseUserId.trim(),
+          passphrase: licensePassphrase,
+          hint: licenseHint,
+          rightPrint: parseOptionalNumber(licenseRightPrint),
+          rightCopy: parseOptionalNumber(licenseRightCopy),
+          startDate: normalizeDate(licenseStartDate),
+          endDate: normalizeDate(licenseEndDate)
+        }
+      })
+    });
+    const body = await response.json();
+    if (!response.ok || body.errors) {
+      const error = body.errors?.[0]?.message || body.error || "license request failed";
+      throw new Error(error);
+    }
+    const created = body.data?.createLicense as License | undefined;
+    if (!created) {
+      throw new Error("license request failed");
+    }
+    setMessage(`License ${created.id} created for ${created.publicationID}`);
+  }
+
   async function setPublicationStatus(publicationId: string, nextStatus: "active" | "inactive") {
     const response = await fetch(
       `${API_BASE}/api/v1/publications/${publicationId}/${nextStatus === "active" ? "activate" : "deactivate"}`,
@@ -309,6 +372,15 @@ function App() {
     }
     const parsed = Number(trimmed);
     return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function normalizeDate(value: string) {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const date = new Date(`${trimmed}T00:00:00Z`);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
   }
 
   useEffect(() => {
@@ -408,7 +480,7 @@ function App() {
             Refresh Catalog
           </button>
         </div>
-        <div className="publisher-grid">
+          <div className="publisher-grid">
           <div className="publisher-form">
             <label>
               Publication Title
@@ -483,11 +555,21 @@ function App() {
               {publications.length === 0 && <div className="file-meta">No publications loaded yet.</div>}
               {publications.map((pub) => (
                 <div className="row catalog-row" key={pub.id}>
-                  <span>{pub.id}</span>
-                  <span>{pub.title}</span>
+                  <span className="cell-clip">{pub.id}</span>
+                  <span className="cell-clip">{pub.title}</span>
                   <span>{pub.status || "active"}</span>
                   <span>{`print: ${pub.right_print ?? 0} / copy: ${pub.right_copy ?? 0}`}</span>
                   <span className="row-actions">
+                    <button
+                      onClick={() => {
+                        setLicensePublicationId(pub.id);
+                        setLicenseRightPrint(String(pub.right_print ?? ""));
+                        setLicenseRightCopy(String(pub.right_copy ?? ""));
+                        setMessage(`License form loaded for ${pub.title}`);
+                      }}
+                    >
+                      Issue License
+                    </button>
                     <button onClick={() => run(() => setPublicationStatus(pub.id, pub.status === "inactive" ? "active" : "inactive"))}>
                       {pub.status === "inactive" ? "Activate" : "Deactivate"}
                     </button>
@@ -501,7 +583,55 @@ function App() {
 
       <section className="panel">
         <div className="section-head">
-          <h2><Shield size={18} /> Admin Users</h2>
+          <h2><KeyRound size={18} /> License Issuance</h2>
+          <button onClick={() => run(issueLicense)} disabled={!token}>
+            Create License
+          </button>
+        </div>
+        <div className="publisher-grid">
+          <div className="publisher-form">
+            <label>
+              Publication ID
+              <input value={licensePublicationId} onChange={(event) => setLicensePublicationId(event.target.value)} placeholder="Select from catalog or paste ID" />
+            </label>
+            <label>
+              User ID
+              <input value={licenseUserId} onChange={(event) => setLicenseUserId(event.target.value)} placeholder="reader-01" />
+            </label>
+            <label>
+              Passphrase
+              <input value={licensePassphrase} onChange={(event) => setLicensePassphrase(event.target.value)} placeholder="license passphrase" />
+            </label>
+            <label>
+              Hint
+              <input value={licenseHint} onChange={(event) => setLicenseHint(event.target.value)} placeholder="optional hint" />
+            </label>
+            <label>
+              Print Rights
+              <input value={licenseRightPrint} onChange={(event) => setLicenseRightPrint(event.target.value)} placeholder="leave blank to inherit" />
+            </label>
+            <label>
+              Copy Rights
+              <input value={licenseRightCopy} onChange={(event) => setLicenseRightCopy(event.target.value)} placeholder="leave blank to inherit" />
+            </label>
+            <label>
+              Start Date
+              <input type="date" value={licenseStartDate} onChange={(event) => setLicenseStartDate(event.target.value)} />
+            </label>
+            <label>
+              End Date
+              <input type="date" value={licenseEndDate} onChange={(event) => setLicenseEndDate(event.target.value)} />
+            </label>
+          </div>
+          <div className="catalog-list">
+            <div className="file-meta">Use this form to issue a license for the selected publication. The button in the catalog row fills the publication and rights fields for you.</div>
+          </div>
+        </div>
+      </section>
+
+      <section className="panel">
+        <div className="section-head">
+          <h2><Shield size={18} /> Publisher Approval and Users</h2>
           <button onClick={() => run(refreshAdminUsers)} disabled={role !== "admin"}>
             Refresh Users
           </button>
@@ -523,7 +653,7 @@ function App() {
               <span>{user.verified ? "verified" : "pending"}</span>
               <span className="row-actions">
                 <button onClick={() => run(() => setAdminUserVerified(user.id, !user.verified))} disabled={role !== "admin"}>
-                  {user.verified ? "Unverify" : "Verify"}
+                  {user.role === "publisher" ? (user.verified ? "Revoke Approval" : "Approve Publisher") : user.verified ? "Unverify" : "Verify"}
                 </button>
               </span>
             </div>

@@ -12,7 +12,7 @@ This matrix is the strict read against the contract PDF and the two appendices, 
 | Publication catalog | In appendix task for managing publications | Yes | REST endpoints added for list/get/create/update/activate/deactivate. |
 | Publication sharing metadata | Publication metadata for access controls | Yes | `right_print` and `right_copy` are exposed on publications and flow into generated licenses. `0` disables the right. |
 | Publisher flow | Third-party publisher access | Yes | Implemented as a simple publisher login plus catalog workspace. |
-| Publisher signup / verification UI | Not explicit in the appendices | Partial | No dedicated approval workflow yet; this is the main uncertain product gap. |
+| Publisher signup / verification UI | Not explicit in the appendices | Yes | Implemented as a simple admin-visible approval workflow for publisher accounts. |
 | User verification page | Not explicit in the appendices | Yes | Implemented as a simple admin-visible user list with verify/unverify actions. |
 | GraphQL | Publication/license workflows | Yes | Kept for integrations and future systems like WordPress. |
 | License/user lookup | Status server style license lookup | Yes | `/api/v1/licenses/{licenseId}/user` exposed. |

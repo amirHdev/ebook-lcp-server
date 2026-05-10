@@ -204,6 +204,7 @@ button {
   padding: 10px 0;
   border-top: 1px solid #edf1f3;
   min-width: 760px;
+  align-items: start;
 }
 
 .row.header {
@@ -212,13 +213,19 @@ button {
 }
 
 .catalog-row {
-  grid-template-columns: minmax(150px, 1fr) minmax(180px, 1.2fr) 110px 130px;
-  min-width: 600px;
+  grid-template-columns: minmax(180px, 1.1fr) minmax(220px, 1.3fr) 100px minmax(150px, 1fr) 170px;
+  min-width: 900px;
 }
 
 .admin-row {
   grid-template-columns: minmax(150px, 1fr) minmax(220px, 1.2fr) 110px 120px 120px;
   min-width: 740px;
+}
+
+.cell-clip {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .row-actions {
