@@ -80,7 +80,7 @@ func EnsurePostgresSchema(ctx context.Context, db *sql.DB) error {
 			right_copy INTEGER,
 			start_date TIMESTAMP,
 			end_date TIMESTAMP,
-			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)`,
 		`CREATE TABLE IF NOT EXISTS lcp_processes (
 			id VARCHAR(36) PRIMARY KEY,
