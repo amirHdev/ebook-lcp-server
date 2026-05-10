@@ -10,10 +10,12 @@ import (
 )
 
 type AuthHandler struct {
-	secret       string
-	adminUser    string
-	adminPass    string
-	admin2FACode string
+	secret        string
+	adminUser     string
+	adminPass     string
+	publisherUser string
+	publisherPass string
+	admin2FACode  string
 }
 
 type LoginRequest struct {
@@ -29,12 +31,14 @@ type LoginResponse struct {
 	ExpiresAt time.Time `json:"expiresAt"`
 }
 
-func NewAuthHandler(secret, adminUser, adminPass, admin2FACode string) *AuthHandler {
+func NewAuthHandler(secret, adminUser, adminPass, publisherUser, publisherPass, admin2FACode string) *AuthHandler {
 	return &AuthHandler{
-		secret:       strings.TrimSpace(secret),
-		adminUser:    strings.TrimSpace(adminUser),
-		adminPass:    strings.TrimSpace(adminPass),
-		admin2FACode: strings.TrimSpace(admin2FACode),
+		secret:        strings.TrimSpace(secret),
+		adminUser:     strings.TrimSpace(adminUser),
+		adminPass:     strings.TrimSpace(adminPass),
+		publisherUser: strings.TrimSpace(publisherUser),
+		publisherPass: strings.TrimSpace(publisherPass),
+		admin2FACode:  strings.TrimSpace(admin2FACode),
 	}
 }
 
@@ -57,19 +61,24 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "login is not configured"})
 		return
 	}
-	if req.Username != h.adminUser || req.Password != h.adminPass {
+	role := ""
+	switch {
+	case req.Username == h.adminUser && req.Password == h.adminPass:
+		role = "admin"
+		if h.admin2FACode != "" && req.TwoFactor != h.admin2FACode {
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "invalid admin 2fa code"})
+			return
+		}
+	case h.publisherUser != "" && req.Username == h.publisherUser && req.Password == h.publisherPass:
+		role = "publisher"
+	default:
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid username or password"})
 		return
 	}
-	if h.admin2FACode != "" && req.TwoFactor != h.admin2FACode {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "invalid admin 2fa code"})
-		return
-	}
-
 	claims := auth.Claims{
 		Subject: req.Username,
-		Role:    "admin",
-		Roles:   []string{"admin"},
+		Role:    role,
+		Roles:   []string{role},
 		Exp:     time.Now().Add(7 * 24 * time.Hour).Unix(),
 	}
 	token, err := auth.IssueBearerToken(h.secret, claims)

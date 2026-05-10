@@ -20,11 +20,21 @@ or:
 
 Roles:
 
-- `admin`: all endpoints, including `/api/v1/admin/metrics`.
+- `admin`: all endpoints, including `/api/v1/admin/metrics` and publication catalog management.
+- `publisher`: publication catalog management, GraphQL publication workflows, and processing.
 - `user`: `/api/v1/lcp/process`, `/api/v1/lcp/status`, GraphQL operations, and publication downloads.
 - `guest`: `/api/v1/lcp/status` and publication downloads.
 
 Admin requests must also include `X-2FA-Code` matching `ADMIN_2FA_CODE` when that environment variable is configured.
+
+## Public API docs
+
+The running service exposes the API spec at:
+
+- `/swagger.yaml`
+- `/swagger.json`
+- `/docs/openapi.yaml`
+- `/docs/swagger.json`
 
 ## Kubernetes
 

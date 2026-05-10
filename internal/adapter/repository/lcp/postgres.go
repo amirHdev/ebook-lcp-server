@@ -3,6 +3,7 @@ package lcp
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"time"
 
 	domain "github.com/Mehrbod2002/lcp/internal/domain/lcp"
@@ -32,6 +33,29 @@ func OpenPostgres(ctx context.Context, dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
+func EnsurePostgresSchema(ctx context.Context, db *sql.DB) error {
+	if db == nil {
+		return nil
+	}
+	stmts := []string{
+		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS authors JSONB NOT NULL DEFAULT '[]'::jsonb`,
+		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS subjects JSONB NOT NULL DEFAULT '[]'::jsonb`,
+		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS tags JSONB NOT NULL DEFAULT '[]'::jsonb`,
+		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'`,
+		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS encrypted_uri TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS checksum TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS license_duration_days INTEGER NOT NULL DEFAULT 30`,
+		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`,
+	}
+	for _, stmt := range stmts {
+		if _, err := db.ExecContext(ctx, stmt); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func NewPostgresPublicationRepository(db *sql.DB) PublicationRepository {
 	return &postgresPublicationRepository{db: db}
 }
@@ -41,20 +65,42 @@ func NewPostgresLicenseRepository(db *sql.DB) LicenseRepository {
 }
 
 func (r *postgresPublicationRepository) Save(ctx context.Context, pub *domain.Publication) error {
+	pub.UpdatedAt = time.Now()
+	if pub.CreatedAt.IsZero() {
+		pub.CreatedAt = pub.UpdatedAt
+	}
 	_, err := r.db.ExecContext(ctx, `
-		INSERT INTO publications (id, title, file_path, encrypted_path, created_at)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO publications (
+			id, title, authors, language, subjects, tags, status,
+			file_path, encrypted_path, encrypted_uri, checksum, license_duration_days,
+			created_at, updated_at
+		)
+		VALUES (
+			$1, $2, $3::jsonb, $4, $5::jsonb, $6::jsonb, $7,
+			$8, $9, $10, $11, $12, $13, $14
+		)
 		ON CONFLICT (id) DO UPDATE SET
 			title = EXCLUDED.title,
+			authors = EXCLUDED.authors,
+			language = EXCLUDED.language,
+			subjects = EXCLUDED.subjects,
+			tags = EXCLUDED.tags,
+			status = EXCLUDED.status,
 			file_path = EXCLUDED.file_path,
 			encrypted_path = EXCLUDED.encrypted_path
-	`, pub.ID, pub.Title, pub.FilePath, pub.EncryptedPath, pub.CreatedAt)
+			, encrypted_uri = EXCLUDED.encrypted_uri,
+			checksum = EXCLUDED.checksum,
+			license_duration_days = EXCLUDED.license_duration_days,
+			updated_at = EXCLUDED.updated_at
+	`, pub.ID, pub.Title, mustJSON(pub.Authors), pub.Language, mustJSON(pub.Subjects), mustJSON(pub.Tags), pub.Status,
+		pub.FilePath, pub.EncryptedPath, pub.EncryptedURI, pub.Checksum, pub.LicenseDurationDays, pub.CreatedAt, pub.UpdatedAt)
 	return err
 }
 
 func (r *postgresPublicationRepository) FindAll(ctx context.Context) ([]*domain.Publication, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT id, title, file_path, encrypted_path, created_at
+		SELECT id, title, authors, language, subjects, tags, status,
+			file_path, encrypted_path, encrypted_uri, checksum, license_duration_days, created_at, updated_at
 		FROM publications
 		ORDER BY created_at DESC
 	`)
@@ -76,7 +122,8 @@ func (r *postgresPublicationRepository) FindAll(ctx context.Context) ([]*domain.
 
 func (r *postgresPublicationRepository) FindByID(ctx context.Context, id string) (*domain.Publication, error) {
 	row := r.db.QueryRowContext(ctx, `
-		SELECT id, title, file_path, encrypted_path, created_at
+		SELECT id, title, authors, language, subjects, tags, status,
+			file_path, encrypted_path, encrypted_uri, checksum, license_duration_days, created_at, updated_at
 		FROM publications
 		WHERE id = $1
 	`, id)
@@ -163,8 +210,27 @@ type rowScanner interface {
 
 func scanPublication(row rowScanner) (*domain.Publication, error) {
 	pub := &domain.Publication{}
-	err := row.Scan(&pub.ID, &pub.Title, &pub.FilePath, &pub.EncryptedPath, &pub.CreatedAt)
+	var authors, subjects, tags []byte
+	err := row.Scan(&pub.ID, &pub.Title, &authors, &pub.Language, &subjects, &tags, &pub.Status,
+		&pub.FilePath, &pub.EncryptedPath, &pub.EncryptedURI, &pub.Checksum, &pub.LicenseDurationDays, &pub.CreatedAt, &pub.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	_ = json.Unmarshal(authors, &pub.Authors)
+	_ = json.Unmarshal(subjects, &pub.Subjects)
+	_ = json.Unmarshal(tags, &pub.Tags)
+	if pub.EncryptedURI == "" {
+		pub.EncryptedURI = pub.EncryptedPath
+	}
 	return pub, err
+}
+
+func mustJSON(v interface{}) string {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return "[]"
+	}
+	return string(data)
 }
 
 func scanLicense(row rowScanner) (*domain.License, error) {

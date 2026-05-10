@@ -66,9 +66,12 @@ func (u *publicationUsecase) UploadAndEncrypt(ctx context.Context, title string,
 	pub := &lcp.Publication{
 		ID:            pubID,
 		Title:         title,
+		Status:        "active",
 		FilePath:      tempPath,
 		EncryptedPath: encryptedPath,
+		EncryptedURI:  encryptedPath,
 		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 	err = u.repo.Save(ctx, pub)
 	if err != nil {

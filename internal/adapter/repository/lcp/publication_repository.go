@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"time"
 	"sync"
 
 	"github.com/Mehrbod2002/lcp/internal/domain/lcp"
@@ -37,7 +38,18 @@ func NewPersistentPublicationRepository(path string) (PublicationRepository, err
 func (r *publicationRepository) Save(ctx context.Context, pub *lcp.Publication) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.publications = append(r.publications, pub)
+	pub.UpdatedAt = time.Now()
+	replaced := false
+	for i, existing := range r.publications {
+		if existing.ID == pub.ID {
+			r.publications[i] = pub
+			replaced = true
+			break
+		}
+	}
+	if !replaced {
+		r.publications = append(r.publications, pub)
+	}
 	return r.persistLocked()
 }
 

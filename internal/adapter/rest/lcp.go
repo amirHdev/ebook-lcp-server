@@ -9,13 +9,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Mehrbod2002/lcp/internal/domain/lcp"
 	"github.com/Mehrbod2002/lcp/internal/pkg/id"
 	usecasePublication "github.com/Mehrbod2002/lcp/internal/usecase/lcp/publication"
 )
 
 type Handler struct {
-	publications usecasePublication.PublicationUsecase
-	startedAt    time.Time
+	publicationRepo lcp.PublicationRepository
+	publications    usecasePublication.PublicationUsecase
+	startedAt       time.Time
 
 	mu        sync.RWMutex
 	processes map[string]*ProcessStatus
@@ -43,11 +45,12 @@ type Metrics struct {
 	ProcessesFail int64 `json:"processesFail"`
 }
 
-func NewHandler(publications usecasePublication.PublicationUsecase) *Handler {
+func NewHandler(repo lcp.PublicationRepository, publications usecasePublication.PublicationUsecase) *Handler {
 	return &Handler{
-		publications: publications,
-		startedAt:    time.Now(),
-		processes:    map[string]*ProcessStatus{},
+		publicationRepo: repo,
+		publications:    publications,
+		startedAt:       time.Now(),
+		processes:       map[string]*ProcessStatus{},
 	}
 }
 

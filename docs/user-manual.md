@@ -25,6 +25,45 @@ Response:
 }
 ```
 
+The same endpoint also accepts the publisher account and returns `role: "publisher"`.
+
+## Publication Catalog
+
+`GET /api/v1/publications`
+
+Lists catalog items available to the authenticated user.
+
+`POST /api/v1/publications`
+
+Creates a publication record. The body can include:
+
+- `title`
+- `authors`
+- `language`
+- `subjects`
+- `tags`
+- `status`
+- `encrypted_uri`
+- `checksum`
+- `license_duration_days`
+- `file` as base64 when uploading a new publication
+
+`GET /api/v1/publications/{publicationId}`
+
+Returns one publication record.
+
+`PATCH /api/v1/publications/{publicationId}`
+
+Updates catalog metadata.
+
+`POST /api/v1/publications/{publicationId}/activate`
+
+Marks a publication active.
+
+`POST /api/v1/publications/{publicationId}/deactivate`
+
+Marks a publication inactive.
+
 ## Upload And Process
 
 `POST /api/v1/lcp/process`
@@ -59,6 +98,8 @@ Response:
 
 The dashboard now provides a file picker. It reads the selected publication file in the browser, base64-encodes it, and sends it to this endpoint.
 
+If you sign in as `admin`, the dashboard sends `X-2FA-Code` automatically on process requests. If you sign in as `publisher`, no 2FA header is needed.
+
 ## Check Status
 
 `GET /api/v1/lcp/status?id=<process-id>`
@@ -77,3 +118,12 @@ X-2FA-Code: <configured-code>
 ```
 
 The response includes uptime, process count, and request counters.
+
+## API Docs
+
+Swagger/OpenAPI is exposed by the running service at:
+
+- `/swagger.yaml`
+- `/swagger.json`
+- `/docs/openapi.yaml`
+- `/docs/swagger.json`

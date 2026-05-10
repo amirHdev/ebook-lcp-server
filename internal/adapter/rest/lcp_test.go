@@ -15,6 +15,8 @@ import (
 
 type fakePublicationUsecase struct{}
 
+type fakePublicationRepo struct{}
+
 func (fakePublicationUsecase) UploadAndEncrypt(ctx context.Context, title string, file io.Reader) (*lcp.Publication, error) {
 	return &lcp.Publication{
 		ID:            "pub-1",
@@ -33,8 +35,20 @@ func (fakePublicationUsecase) GetByID(ctx context.Context, id string) (*lcp.Publ
 	return nil, nil
 }
 
+func (fakePublicationRepo) Save(ctx context.Context, pub *lcp.Publication) error {
+	return nil
+}
+
+func (fakePublicationRepo) FindAll(ctx context.Context) ([]*lcp.Publication, error) {
+	return nil, nil
+}
+
+func (fakePublicationRepo) FindByID(ctx context.Context, id string) (*lcp.Publication, error) {
+	return nil, nil
+}
+
 func TestProcessCreatesPublication(t *testing.T) {
-	handler := NewHandler(fakePublicationUsecase{})
+	handler := NewHandler(fakePublicationRepo{}, fakePublicationUsecase{})
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/lcp/process", strings.NewReader(`{"title":"Book","file":"aGVsbG8="}`))
 	rec := httptest.NewRecorder()
 
@@ -53,7 +67,7 @@ func TestProcessCreatesPublication(t *testing.T) {
 }
 
 func TestProcessRejectsInvalidPayload(t *testing.T) {
-	handler := NewHandler(fakePublicationUsecase{})
+	handler := NewHandler(fakePublicationRepo{}, fakePublicationUsecase{})
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/lcp/process", strings.NewReader(`{"file":"aGVsbG8="}`))
 	rec := httptest.NewRecorder()
 

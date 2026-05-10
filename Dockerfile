@@ -22,6 +22,7 @@ COPY --from=builder /app/lcp-server /usr/local/bin/lcp-server
 COPY --from=builder /go/bin/lcpencrypt /usr/local/bin/lcpencrypt
 COPY --from=builder /go/bin/lcpserver /usr/local/bin/lcpserver
 COPY --from=builder /go/bin/lsdserver /usr/local/bin/lsdserver
+COPY --from=builder /app/docs /srv/lcp/docs
 
 ENV SERVER_PORT=:8080
 EXPOSE 8080

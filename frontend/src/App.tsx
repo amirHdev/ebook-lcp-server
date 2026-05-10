@@ -34,6 +34,7 @@ function App() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
+  const [role, setRole] = useState<string>("");
   const [twoFactor, setTwoFactor] = useState("");
   const [title, setTitle] = useState("Example Publication");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -45,9 +46,11 @@ function App() {
   useEffect(() => {
     const savedToken = window.localStorage.getItem("lcp-token") || "";
     const savedUser = window.localStorage.getItem("lcp-username") || "";
+    const savedRole = window.localStorage.getItem("lcp-role") || "";
     const saved2fa = window.localStorage.getItem("lcp-2fa") || "";
     setToken(savedToken);
     setUsername(savedUser);
+    setRole(savedRole);
     setTwoFactor(saved2fa);
   }, []);
 
@@ -72,8 +75,10 @@ function App() {
     const body = await response.json();
     if (!response.ok) throw new Error(body.error || "login failed");
     setToken(body.token);
+    setRole(body.role || "");
     window.localStorage.setItem("lcp-token", body.token);
     window.localStorage.setItem("lcp-username", username);
+    window.localStorage.setItem("lcp-role", body.role || "");
     window.localStorage.setItem("lcp-2fa", twoFactor);
     setMessage(`Signed in as ${body.subject}`);
   }
@@ -115,7 +120,10 @@ function App() {
 
     const response = await fetch(`${API_BASE}/api/v1/lcp/process`, {
       method: "POST",
-      headers: authHeaders,
+      headers: {
+        ...authHeaders,
+        ...(role === "admin" && twoFactor ? { "X-2FA-Code": twoFactor } : {})
+      },
       body: JSON.stringify({ title, file: fileBase64 })
     });
     const body = await response.json();
@@ -175,6 +183,7 @@ function App() {
             JWT
             <textarea readOnly value={token} placeholder="JWT appears here after sign in" />
           </label>
+          <div className="file-meta">Role: {role || "unset"}</div>
         </div>
 
         <div className="panel">

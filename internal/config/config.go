@@ -37,6 +37,10 @@ type Config struct {
 		Username string
 		Password string
 	}
+	Publisher struct {
+		Username string
+		Password string
+	}
 	Server struct {
 		Port          string
 		PublicBaseURL string
@@ -65,6 +69,8 @@ func LoadConfig() (*Config, error) {
 	cfg.JWT.Admin2FACode = os.Getenv("ADMIN_2FA_CODE")
 	cfg.Admin.Username = os.Getenv("ADMIN_USERNAME")
 	cfg.Admin.Password = os.Getenv("ADMIN_PASSWORD")
+	cfg.Publisher.Username = os.Getenv("PUBLISHER_USERNAME")
+	cfg.Publisher.Password = os.Getenv("PUBLISHER_PASSWORD")
 	cfg.Server.Port = os.Getenv("SERVER_PORT")
 	cfg.Server.PublicBaseURL = os.Getenv("PUBLIC_BASE_URL")
 	cfg.Server.StatusBaseURL = os.Getenv("STATUS_BASE_URL")

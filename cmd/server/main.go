@@ -49,6 +49,9 @@ func main() {
 	}
 	if db != nil {
 		defer db.Close()
+		if err := lcp.EnsurePostgresSchema(context.Background(), db); err != nil {
+			panic(err)
+		}
 	}
 	pubRepo, err := buildPublicationRepository(cfg, db)
 	if err != nil {
@@ -62,16 +65,23 @@ func main() {
 	publicBaseURL := buildBaseURL(cfg)
 	licUsecase := license.NewLicenseUsecase(licRepo, lcpSrv, publicBaseURL)
 	authn := auth.New(cfg.JWT.Secret, cfg.JWT.Admin2FACode)
-	restHandler := rest.NewHandler(pubUsecase)
-	authHandler := rest.NewAuthHandler(cfg.JWT.Secret, cfg.Admin.Username, cfg.Admin.Password, cfg.JWT.Admin2FACode)
+	restHandler := rest.NewHandler(pubRepo, pubUsecase)
+	authHandler := rest.NewAuthHandler(cfg.JWT.Secret, cfg.Admin.Username, cfg.Admin.Password, cfg.Publisher.Username, cfg.Publisher.Password, cfg.JWT.Admin2FACode)
+	publicationHandler := rest.NewPublicationHandler(pubRepo, pubUsecase)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/auth/login", authHandler.Login)
 	mux.HandleFunc("/api/v1/auth/ping", authHandler.Ping)
+	mux.HandleFunc("/swagger.yaml", rest.SwaggerYAML())
+	mux.HandleFunc("/swagger.json", rest.SwaggerJSON())
+	mux.HandleFunc("/docs/openapi.yaml", rest.OpenAPIYAML())
+	mux.HandleFunc("/docs/swagger.json", rest.SwaggerJSON())
 	mux.HandleFunc("/healthz", restHandler.Healthz)
 	mux.HandleFunc("/readyz", restHandler.Readyz)
 	mux.HandleFunc("/metrics", restHandler.PrometheusMetrics)
 	mux.HandleFunc("/api/v1/licenses/", rest.LicenseUserData(licUsecase))
+	mux.Handle("/api/v1/publications", authn.RequireRole("admin", "publisher", "user", "guest")(publicationHandler))
+	mux.Handle("/api/v1/publications/", authn.RequireRole("admin", "publisher", "user", "guest")(publicationHandler))
 
 	mux.Handle("/api/v1/lcp/process", authn.RequireRole("admin", "user")(http.HandlerFunc(restHandler.Process)))
 	mux.Handle("/api/v1/lcp/status", authn.RequireRole("admin", "user", "guest")(http.HandlerFunc(restHandler.Status)))
