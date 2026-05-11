@@ -173,7 +173,6 @@ func passphraseHash(value string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-
 func (s *Service) GetLicense(ctx context.Context, id string) ([]byte, error) {
 	if id == "" {
 		return nil, fmt.Errorf("missing license id")
@@ -219,4 +218,3 @@ func (s *Service) GetLicense(ctx context.Context, id string) ([]byte, error) {
 
 	return nil, lastErr
 }
-
