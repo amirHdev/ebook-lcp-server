@@ -9,6 +9,11 @@ import (
 	usecaseLicense "github.com/Mehrbod2002/lcp/internal/usecase/lcp/license"
 )
 
+type UpdatedField struct {
+	License string `json:"license"`
+	Status  string `json:"status"`
+}
+
 type LicenseStatusLink struct {
 	Rel  string `json:"rel"`
 	Href string `json:"href"`
@@ -19,7 +24,7 @@ type LicenseStatusDocumentResponse struct {
 	ID      string              `json:"id"`
 	Status  string              `json:"status"`
 	Message string              `json:"message,omitempty"`
-	Updated string              `json:"updated"`
+	Updated UpdatedField        `json:"updated"`
 	Links   []LicenseStatusLink `json:"links"`
 }
 
@@ -59,9 +64,9 @@ func LicenseStatusDocument(licenses usecaseLicense.LicenseUsecase) http.HandlerF
 		self := scheme + "://" + host + "/licenses/" + lic.ID + "/status"
 		licenseLink := "https://testmedical.ir/licenses/" + lic.ID + ".lcpl"
 
-		updated := lic.CreatedAt
-		if updated.IsZero() {
-			updated = time.Now().UTC()
+		updatedTime := lic.CreatedAt
+		if updatedTime.IsZero() {
+			updatedTime = time.Now().UTC()
 		}
 
 		w.Header().Set("Content-Type", "application/vnd.readium.license.status.v1.0+json")
@@ -70,7 +75,10 @@ func LicenseStatusDocument(licenses usecaseLicense.LicenseUsecase) http.HandlerF
 			ID:      lic.ID,
 			Status:  "ready",
 			Message: "License is ready.",
-			Updated: updated.UTC().Format(time.RFC3339),
+			Updated: UpdatedField{
+				License: lic.ID,
+				Status:  "ready",
+			},
 			Links: []LicenseStatusLink{
 				{
 					Rel:  "self",
