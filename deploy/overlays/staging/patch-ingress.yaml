@@ -5,10 +5,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - staging.testmedical.ir
+        - staging.yourdomain.com
       secretName: lcp-staging-server-tls
   rules:
-    - host: staging.testmedical.ir
+    - host: staging.yourdomain.com
       http:
         paths:
           - path: /api

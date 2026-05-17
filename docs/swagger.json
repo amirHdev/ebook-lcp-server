@@ -7,10 +7,10 @@
   },
   "servers": [
     {
-      "url": "https://testmedical.ir"
+      "url": "https://yourdomain.com"
     },
     {
-      "url": "https://staging.testmedical.ir"
+      "url": "https://staging.yourdomain.com"
     }
   ],
   "security": [

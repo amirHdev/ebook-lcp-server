@@ -4,6 +4,6 @@ metadata:
   name: lcp-config
 data:
   LCP_PROFILE: development
-  PUBLIC_BASE_URL: https://dev.testmedical.ir
-  LCP_PROVIDER_URI: https://dev.testmedical.ir
-  STATUS_BASE_URL: https://status.testmedical.ir
+  PUBLIC_BASE_URL: https://dev.yourdomain.com
+  LCP_PROVIDER_URI: https://dev.yourdomain.com
+  STATUS_BASE_URL: https://status.yourdomain.com

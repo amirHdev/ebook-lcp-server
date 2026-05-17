@@ -10,10 +10,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - status.testmedical.ir
+        - status.yourdomain.com
       secretName: lsd-core-tls
   rules:
-    - host: status.testmedical.ir
+    - host: status.yourdomain.com
       http:
         paths:
           - path: /

@@ -91,7 +91,7 @@ func defaultAdminUsers() []*AdminUser {
 	return []*AdminUser{
 		{
 			ID:        "publisher-01",
-			Email:     "publisher01@testmedical.ir",
+			Email:     "publisher01@yourdomain.com",
 			Name:      "Publisher One",
 			Role:      "publisher",
 			Verified:  true,
@@ -100,7 +100,7 @@ func defaultAdminUsers() []*AdminUser {
 		},
 		{
 			ID:        "reader-01",
-			Email:     "reader01@testmedical.ir",
+			Email:     "reader01@yourdomain.com",
 			Name:      "Reader One",
 			Role:      "user",
 			Verified:  false,

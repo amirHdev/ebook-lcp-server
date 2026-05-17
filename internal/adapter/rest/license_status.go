@@ -62,7 +62,7 @@ func LicenseStatusDocument(licenses usecaseLicense.LicenseUsecase) http.HandlerF
 
 		host := r.Host
 		self := scheme + "://" + host + "/licenses/" + lic.ID + "/status"
-		licenseLink := "https://testmedical.ir/licenses/" + lic.ID + ".lcpl"
+		licenseLink := "https://yourdomain.com/licenses/" + lic.ID + ".lcpl"
 
 		updatedTime := lic.CreatedAt
 		if updatedTime.IsZero() {

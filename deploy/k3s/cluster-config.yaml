@@ -1,8 +1,8 @@
 write-kubeconfig-mode: "0644"
 tls-san:
-  - registry.testmedical.ir
-  - argocd.testmedical.ir
-  - testmedical.ir
-  - status.testmedical.ir
-  - dev.testmedical.ir
-  - staging.testmedical.ir
+  - registry.yourdomain.com
+  - argocd.yourdomain.com
+  - yourdomain.com
+  - status.yourdomain.com
+  - dev.yourdomain.com
+  - staging.yourdomain.com

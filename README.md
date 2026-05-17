@@ -128,7 +128,7 @@ kubectl apply -k deploy/overlays/prod
 ```
 
 K3s-compatible defaults are used in the deployment: ingress traefik, storage local-path, and built-in cluster components. Change the overlay image links and hostnames as required.
-Images are supposed to be stored in the registry hosted internally on `registry.testmedical.ir:5000`.
+Images are pushed to and pulled from your own container registry. Update the image references in `deploy/overlays/prod/kustomization.yaml` (or equivalent) to match your registry.
 
 ## ArgoCD
 
@@ -162,6 +162,20 @@ Set `CI_REGISTRY`, `CI_REGISTRY_USER`, `CI_REGISTRY_PASSWORD`, and `KUBECONFIG` 
 - `deploy/registry`: in-cluster image registry.
 - `.gitlab-ci.yml`: Pipeline definition for GitLab.
 
+## ⚠️ Configuration Before Deployment
+
+Before deploying, you must replace the following placeholders:
+
+- `yourdomain.com` → Your actual domain
+- `your-registry.example.com` → Your container registry (e.g. `registry.gitlab.com/youruser` or `ghcr.io/yourusername`)
+
+Quick search & replace:
+
+````bash
+grep -rl "yourdomain.com" .
+grep -rl "your-registry.example.com" .
+```
+
 ## Documentation
 
 - `docs/deployment-guide.md`
@@ -178,4 +192,4 @@ Set `CI_REGISTRY`, `CI_REGISTRY_USER`, `CI_REGISTRY_PASSWORD`, and `KUBECONFIG` 
 
 ```bash
 k6 run -e BASE_URL=http://localhost:8080 -e JWT="$JWT" tests/k6/lcp-status.js
-```
+````

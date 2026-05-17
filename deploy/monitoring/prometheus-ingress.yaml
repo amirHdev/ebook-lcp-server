@@ -9,10 +9,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - prometheus.testmedical.ir
+        - prometheus.yourdomain.com
       secretName: prometheus-tls
   rules:
-    - host: prometheus.testmedical.ir
+    - host: prometheus.yourdomain.com
       http:
         paths:
           - path: /

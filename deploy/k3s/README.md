@@ -40,8 +40,8 @@ Example HA server with embedded etcd:
 ```bash
 curl -sfL https://get.k3s.io | K3S_TOKEN=replace-with-token sh -s - server \
   --cluster-init \
-  --tls-san testmedical.ir \
-  --tls-san status.testmedical.ir
+  --tls-san yourdomain.com \
+  --tls-san status.yourdomain.com
 ```
 
 Join a worker:

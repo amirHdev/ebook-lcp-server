@@ -5,10 +5,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - dev.testmedical.ir
+        - dev.yourdomain.com
       secretName: lcp-dev-server-tls
   rules:
-    - host: dev.testmedical.ir
+    - host: dev.yourdomain.com
       http:
         paths:
           - path: /api

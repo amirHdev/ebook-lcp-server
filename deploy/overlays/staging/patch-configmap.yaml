@@ -4,6 +4,6 @@ metadata:
   name: lcp-config
 data:
   LCP_PROFILE: staging
-  PUBLIC_BASE_URL: https://staging.testmedical.ir
-  LCP_PROVIDER_URI: https://staging.testmedical.ir
-  STATUS_BASE_URL: https://status.testmedical.ir
+  PUBLIC_BASE_URL: https://staging.yourdomain.com
+  LCP_PROVIDER_URI: https://staging.yourdomain.com
+  STATUS_BASE_URL: https://status.yourdomain.com

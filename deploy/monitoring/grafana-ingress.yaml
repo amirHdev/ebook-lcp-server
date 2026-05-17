@@ -8,10 +8,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - grafana.testmedical.ir
+        - grafana.yourdomain.com
       secretName: grafana-tls
   rules:
-    - host: grafana.testmedical.ir
+    - host: grafana.yourdomain.com
       http:
         paths:
           - path: /

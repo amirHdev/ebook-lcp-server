@@ -34,14 +34,14 @@ K3s already provides the core platform pieces:
 ## Bootstrap
 
 1. Install the in-cluster registry from `deploy/registry`.
-2. Push backend and frontend images to `registry.testmedical.ir:5000`.
+2. Push backend and frontend images to `registry.yourdomain.com:5000`.
 3. Replace hosts in overlay ingress patches:
-   - `dev.testmedical.ir`
-   - `staging.testmedical.ir`
-   - `testmedical.ir`
-   - `status.testmedical.ir`
-   - `argocd.testmedical.ir`
-   - `registry.testmedical.ir`
+   - `dev.yourdomain.com`
+   - `staging.yourdomain.com`
+   - `yourdomain.com`
+   - `status.yourdomain.com`
+   - `argocd.yourdomain.com`
+   - `registry.yourdomain.com`
 4. Create real secrets for each namespace:
 
 ```bash

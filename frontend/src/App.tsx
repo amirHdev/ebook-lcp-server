@@ -1,5 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Activity, BarChart3, CheckCircle2, FileUp, KeyRound, Play, Shield } from "lucide-react";
+import {
+  Activity,
+  BarChart3,
+  CheckCircle2,
+  FileUp,
+  KeyRound,
+  Play,
+  Shield,
+} from "lucide-react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 
@@ -91,9 +99,13 @@ function App() {
   const [twoFactor, setTwoFactor] = useState("");
   const [title, setTitle] = useState("Example Publication");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState("Choose a publication file to upload.");
+  const [filePreview, setFilePreview] = useState(
+    "Choose a publication file to upload.",
+  );
   const [catalogTitle, setCatalogTitle] = useState("Publisher Sample");
-  const [catalogAuthors, setCatalogAuthors] = useState("Amirhossein Akhlaghpour");
+  const [catalogAuthors, setCatalogAuthors] = useState(
+    "Amirhossein Akhlaghpour",
+  );
   const [catalogLanguage, setCatalogLanguage] = useState("en");
   const [catalogSubjects, setCatalogSubjects] = useState("publishing,ebooks");
   const [catalogTags, setCatalogTags] = useState("sample");
@@ -104,7 +116,9 @@ function App() {
   const [catalogChecksum, setCatalogChecksum] = useState("");
   const [catalogLicenseDays, setCatalogLicenseDays] = useState("30");
   const [catalogFile, setCatalogFile] = useState<File | null>(null);
-  const [catalogFilePreview, setCatalogFilePreview] = useState("Choose a publication file for the catalog.");
+  const [catalogFilePreview, setCatalogFilePreview] = useState(
+    "Choose a publication file for the catalog.",
+  );
   const [licensePublicationId, setLicensePublicationId] = useState("");
   const [licenseUserId, setLicenseUserId] = useState("reader-01");
   const [licensePassphrase, setLicensePassphrase] = useState("");
@@ -134,9 +148,9 @@ function App() {
   const authHeaders = useMemo(
     () => ({
       Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     }),
-    [token]
+    [token],
   );
 
   async function login() {
@@ -146,8 +160,8 @@ function App() {
       body: JSON.stringify({
         username,
         password,
-        twoFactor
-      })
+        twoFactor,
+      }),
     });
     const body = await response.json();
     if (!response.ok) throw new Error(body.error || "login failed");
@@ -161,7 +175,9 @@ function App() {
   }
 
   async function refreshStatus() {
-    const response = await fetch(`${API_BASE}/api/v1/lcp/status`, { headers: authHeaders });
+    const response = await fetch(`${API_BASE}/api/v1/lcp/status`, {
+      headers: authHeaders,
+    });
     const body = await response.json();
     if (!response.ok) throw new Error(body.error || "status request failed");
     setStatus(body);
@@ -169,7 +185,7 @@ function App() {
 
   async function refreshMetrics() {
     const response = await fetch(`${API_BASE}/api/v1/admin/metrics`, {
-      headers: { ...authHeaders, "X-2FA-Code": twoFactor }
+      headers: { ...authHeaders, "X-2FA-Code": twoFactor },
     });
     const body = await response.json();
     if (!response.ok) throw new Error(body.error || "metrics request failed");
@@ -177,16 +193,19 @@ function App() {
   }
 
   async function refreshPublications() {
-    const response = await fetch(`${API_BASE}/api/v1/publications`, { headers: authHeaders });
+    const response = await fetch(`${API_BASE}/api/v1/publications`, {
+      headers: authHeaders,
+    });
     const body = await response.json();
-    if (!response.ok) throw new Error(body.error || "publication list request failed");
+    if (!response.ok)
+      throw new Error(body.error || "publication list request failed");
     const payload = body as PublicationListResponse;
     setPublications(payload.publications || []);
   }
 
   async function refreshAdminUsers() {
     const response = await fetch(`${API_BASE}/api/v1/admin/users`, {
-      headers: { ...authHeaders, "X-2FA-Code": twoFactor }
+      headers: { ...authHeaders, "X-2FA-Code": twoFactor },
     });
     const body = await response.json();
     if (!response.ok) throw new Error(body.error || "users request failed");
@@ -216,12 +235,13 @@ function App() {
     const response = await fetch(`${API_BASE}/api/v1/lcp/process`, {
       method: "POST",
       headers: {
-        ...authHeaders
+        ...authHeaders,
       },
-      body: JSON.stringify({ title, file: fileBase64 })
+      body: JSON.stringify({ title, file: fileBase64 }),
     });
     const body = await response.json();
-    if (!response.ok) throw new Error(body.error || body.error || "process request failed");
+    if (!response.ok)
+      throw new Error(body.error || body.error || "process request failed");
     setMessage(`Process ${body.id} completed`);
     await refreshStatus();
   }
@@ -260,11 +280,12 @@ function App() {
         encrypted_uri: catalogEncryptedUri,
         checksum: catalogChecksum,
         license_duration_days: Number(catalogLicenseDays) || 30,
-        file: fileBase64
-      })
+        file: fileBase64,
+      }),
     });
     const body = await response.json();
-    if (!response.ok) throw new Error(body.error || "catalog create request failed");
+    if (!response.ok)
+      throw new Error(body.error || "catalog create request failed");
     setMessage(`Publication ${body.id} created`);
     await refreshPublications();
   }
@@ -276,7 +297,9 @@ function App() {
     if (!licenseUserId.trim()) {
       throw new Error("user id is required");
     }
-    const effectivePassphrase = licensePassphrase.trim() || `lcp-${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
+    const effectivePassphrase =
+      licensePassphrase.trim() ||
+      `lcp-${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
     if (!licensePassphrase.trim()) {
       setLicensePassphrase(effectivePassphrase);
     }
@@ -287,7 +310,7 @@ function App() {
       body: JSON.stringify({
         query:
           "mutation CreateLicense($publicationID: ID!, $userID: ID!, $passphrase: String!, $hint: String!, $rightPrint: Int, $rightCopy: Int, $startDate: String, $endDate: String) { createLicense(publicationID: $publicationID, userID: $userID, passphrase: $passphrase, hint: $hint, rightPrint: $rightPrint, rightCopy: $rightCopy, startDate: $startDate, endDate: $endDate) { id publicationID userID publicationURL passphrase hint rightPrint rightCopy startDate endDate createdAt } }",
-          variables: {
+        variables: {
           publicationID: licensePublicationId.trim(),
           userID: licenseUserId.trim(),
           passphrase: effectivePassphrase,
@@ -295,13 +318,14 @@ function App() {
           rightPrint: parseOptionalNumber(licenseRightPrint),
           rightCopy: parseOptionalNumber(licenseRightCopy),
           startDate: normalizeDate(licenseStartDate),
-          endDate: normalizeDate(licenseEndDate)
-        }
-      })
+          endDate: normalizeDate(licenseEndDate),
+        },
+      }),
     });
     const body = await response.json();
     if (!response.ok || body.errors) {
-      const error = body.errors?.[0]?.message || body.error || "license request failed";
+      const error =
+        body.errors?.[0]?.message || body.error || "license request failed";
       throw new Error(error);
     }
     const created = body.data?.createLicense as License | undefined;
@@ -312,16 +336,20 @@ function App() {
     setMessage(`License ${created.id} created for ${created.publicationID}`);
   }
 
-  async function setPublicationStatus(publicationId: string, nextStatus: "active" | "inactive") {
+  async function setPublicationStatus(
+    publicationId: string,
+    nextStatus: "active" | "inactive",
+  ) {
     const response = await fetch(
       `${API_BASE}/api/v1/publications/${publicationId}/${nextStatus === "active" ? "activate" : "deactivate"}`,
       {
         method: "POST",
-        headers: authHeaders
-      }
+        headers: authHeaders,
+      },
     );
     const body = await response.json();
-    if (!response.ok) throw new Error(body.error || "catalog status update failed");
+    if (!response.ok)
+      throw new Error(body.error || "catalog status update failed");
     setMessage(`Publication ${body.id} marked ${body.status}`);
     await refreshPublications();
   }
@@ -331,8 +359,8 @@ function App() {
       `${API_BASE}/api/v1/admin/users/${userId}/${verified ? "verify" : "unverify"}`,
       {
         method: "POST",
-        headers: { ...authHeaders, "X-2FA-Code": twoFactor }
-      }
+        headers: { ...authHeaders, "X-2FA-Code": twoFactor },
+      },
     );
     const body = await response.json();
     if (!response.ok) throw new Error(body.error || "user update failed");
@@ -343,13 +371,21 @@ function App() {
   function onFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] || null;
     setSelectedFile(file);
-    setFilePreview(file ? `${file.name} · ${file.type || "unknown type"} · ${Math.ceil(file.size / 1024)} KiB` : "Choose a publication file to upload.");
+    setFilePreview(
+      file
+        ? `${file.name} · ${file.type || "unknown type"} · ${Math.ceil(file.size / 1024)} KiB`
+        : "Choose a publication file to upload.",
+    );
   }
 
   function onCatalogFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] || null;
     setCatalogFile(file);
-    setCatalogFilePreview(file ? `${file.name} · ${file.type || "unknown type"} · ${Math.ceil(file.size / 1024)} KiB` : "Choose a publication file for the catalog.");
+    setCatalogFilePreview(
+      file
+        ? `${file.name} · ${file.type || "unknown type"} · ${Math.ceil(file.size / 1024)} KiB`
+        : "Choose a publication file for the catalog.",
+    );
   }
 
   function publicBaseUrl() {
@@ -365,7 +401,7 @@ function App() {
   }
 
   function licenseStatusUrl(licenseId: string) {
-    return `https://status.testmedical.ir/licenses/${licenseId}/status`;
+    return `${import.meta.env.VITE_STATUS_BASE_URL}/licenses/${licenseId}/status`;
   }
 
   function publicationLcpdfUrl(publicationId: string) {
@@ -426,7 +462,10 @@ function App() {
       <header className="topbar">
         <div>
           <h1>LCP Admin</h1>
-          <p>Operations dashboard for publications, processing, and runtime health.</p>
+          <p>
+            Operations dashboard for publications, processing, and runtime
+            health.
+          </p>
         </div>
         <div className="status-pill">
           <Activity size={18} />
@@ -436,18 +475,30 @@ function App() {
 
       <section className="grid">
         <div className="panel auth-panel">
-          <h2><Shield size={18} /> Admin Login</h2>
+          <h2>
+            <Shield size={18} /> Admin Login
+          </h2>
           <label>
             Username
-            <input value={username} onChange={(event) => setUsername(event.target.value)} />
+            <input
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+            />
           </label>
           <label>
             Password
-            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
           </label>
           <label>
             Admin 2FA
-            <input value={twoFactor} onChange={(event) => setTwoFactor(event.target.value)} />
+            <input
+              value={twoFactor}
+              onChange={(event) => setTwoFactor(event.target.value)}
+            />
           </label>
           <button onClick={() => run(login)}>
             <Shield size={18} />
@@ -455,16 +506,25 @@ function App() {
           </button>
           <label>
             JWT
-            <textarea readOnly value={token} placeholder="JWT appears here after sign in" />
+            <textarea
+              readOnly
+              value={token}
+              placeholder="JWT appears here after sign in"
+            />
           </label>
           <div className="file-meta">Role: {role || "unset"}</div>
         </div>
 
         <div className="panel">
-          <h2><Play size={18} /> Process</h2>
+          <h2>
+            <Play size={18} /> Process
+          </h2>
           <label>
             Title
-            <input value={title} onChange={(event) => setTitle(event.target.value)} />
+            <input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+            />
           </label>
           <label>
             Publication File
@@ -484,75 +544,128 @@ function App() {
         </div>
 
         <div className="panel">
-          <h2><BarChart3 size={18} /> Metrics</h2>
-          <button onClick={() => run(refreshMetrics)} disabled={role !== "admin"}>
+          <h2>
+            <BarChart3 size={18} /> Metrics
+          </h2>
+          <button
+            onClick={() => run(refreshMetrics)}
+            disabled={role !== "admin"}
+          >
             <KeyRound size={18} />
             Load Metrics
           </button>
-          {role !== "admin" && <div className="file-meta">Admin login only.</div>}
+          {role !== "admin" && (
+            <div className="file-meta">Admin login only.</div>
+          )}
           <dl className="metrics">
             <dt>Uptime</dt>
             <dd>{metrics?.uptimeSec ?? 0}s</dd>
             <dt>Requests</dt>
             <dd>{metrics?.metrics.requestsTotal ?? 0}</dd>
             <dt>OK / Failed</dt>
-            <dd>{metrics ? `${metrics.metrics.processesOk} / ${metrics.metrics.processesFail}` : "0 / 0"}</dd>
+            <dd>
+              {metrics
+                ? `${metrics.metrics.processesOk} / ${metrics.metrics.processesFail}`
+                : "0 / 0"}
+            </dd>
           </dl>
         </div>
       </section>
 
       <section className="panel">
         <div className="section-head">
-          <h2><Shield size={18} /> Publisher Workspace</h2>
+          <h2>
+            <Shield size={18} /> Publisher Workspace
+          </h2>
           <button onClick={() => run(refreshPublications)} disabled={!token}>
             Refresh Catalog
           </button>
         </div>
-          <div className="publisher-grid">
+        <div className="publisher-grid">
           <div className="publisher-form">
             <label>
               Publication Title
-              <input value={catalogTitle} onChange={(event) => setCatalogTitle(event.target.value)} />
+              <input
+                value={catalogTitle}
+                onChange={(event) => setCatalogTitle(event.target.value)}
+              />
             </label>
             <label>
               Authors
-              <input value={catalogAuthors} onChange={(event) => setCatalogAuthors(event.target.value)} placeholder="Comma separated" />
+              <input
+                value={catalogAuthors}
+                onChange={(event) => setCatalogAuthors(event.target.value)}
+                placeholder="Comma separated"
+              />
             </label>
             <label>
               Language
-              <input value={catalogLanguage} onChange={(event) => setCatalogLanguage(event.target.value)} />
+              <input
+                value={catalogLanguage}
+                onChange={(event) => setCatalogLanguage(event.target.value)}
+              />
             </label>
             <label>
               Subjects
-              <input value={catalogSubjects} onChange={(event) => setCatalogSubjects(event.target.value)} placeholder="Comma separated" />
+              <input
+                value={catalogSubjects}
+                onChange={(event) => setCatalogSubjects(event.target.value)}
+                placeholder="Comma separated"
+              />
             </label>
             <label>
               Tags
-              <input value={catalogTags} onChange={(event) => setCatalogTags(event.target.value)} placeholder="Comma separated" />
+              <input
+                value={catalogTags}
+                onChange={(event) => setCatalogTags(event.target.value)}
+                placeholder="Comma separated"
+              />
             </label>
             <label>
               Print Rights
-              <input value={catalogRightPrint} onChange={(event) => setCatalogRightPrint(event.target.value)} placeholder="0 disables" />
+              <input
+                value={catalogRightPrint}
+                onChange={(event) => setCatalogRightPrint(event.target.value)}
+                placeholder="0 disables"
+              />
             </label>
             <label>
               Copy Rights
-              <input value={catalogRightCopy} onChange={(event) => setCatalogRightCopy(event.target.value)} placeholder="0 disables" />
+              <input
+                value={catalogRightCopy}
+                onChange={(event) => setCatalogRightCopy(event.target.value)}
+                placeholder="0 disables"
+              />
             </label>
             <label>
               Status
-              <input value={catalogStatus} onChange={(event) => setCatalogStatus(event.target.value)} />
+              <input
+                value={catalogStatus}
+                onChange={(event) => setCatalogStatus(event.target.value)}
+              />
             </label>
             <label>
               Encrypted URI
-              <input value={catalogEncryptedUri} onChange={(event) => setCatalogEncryptedUri(event.target.value)} placeholder="Optional if uploading a file" />
+              <input
+                value={catalogEncryptedUri}
+                onChange={(event) => setCatalogEncryptedUri(event.target.value)}
+                placeholder="Optional if uploading a file"
+              />
             </label>
             <label>
               Checksum
-              <input value={catalogChecksum} onChange={(event) => setCatalogChecksum(event.target.value)} placeholder="Optional sha256" />
+              <input
+                value={catalogChecksum}
+                onChange={(event) => setCatalogChecksum(event.target.value)}
+                placeholder="Optional sha256"
+              />
             </label>
             <label>
               License Duration Days
-              <input value={catalogLicenseDays} onChange={(event) => setCatalogLicenseDays(event.target.value)} />
+              <input
+                value={catalogLicenseDays}
+                onChange={(event) => setCatalogLicenseDays(event.target.value)}
+              />
             </label>
             <label>
               Publication File
@@ -580,7 +693,9 @@ function App() {
                 <span>Rights</span>
                 <span>Actions</span>
               </div>
-              {publications.length === 0 && <div className="file-meta">No publications loaded yet.</div>}
+              {publications.length === 0 && (
+                <div className="file-meta">No publications loaded yet.</div>
+              )}
               {publications.map((pub) => (
                 <div className="row catalog-row" key={pub.id}>
                   <span className="cell-clip">{pub.id}</span>
@@ -598,7 +713,16 @@ function App() {
                     >
                       Issue License
                     </button>
-                    <button onClick={() => run(() => setPublicationStatus(pub.id, pub.status === "inactive" ? "active" : "inactive"))}>
+                    <button
+                      onClick={() =>
+                        run(() =>
+                          setPublicationStatus(
+                            pub.id,
+                            pub.status === "inactive" ? "active" : "inactive",
+                          ),
+                        )
+                      }
+                    >
                       {pub.status === "inactive" ? "Activate" : "Deactivate"}
                     </button>
                   </span>
@@ -611,7 +735,9 @@ function App() {
 
       <section className="panel">
         <div className="section-head">
-          <h2><KeyRound size={18} /> License Issuance</h2>
+          <h2>
+            <KeyRound size={18} /> License Issuance
+          </h2>
           <button onClick={() => run(issueLicense)} disabled={!token}>
             Create License
           </button>
@@ -620,53 +746,98 @@ function App() {
           <div className="publisher-form">
             <label>
               Publication ID
-              <input value={licensePublicationId} onChange={(event) => setLicensePublicationId(event.target.value)} placeholder="Select from catalog or paste ID" />
+              <input
+                value={licensePublicationId}
+                onChange={(event) =>
+                  setLicensePublicationId(event.target.value)
+                }
+                placeholder="Select from catalog or paste ID"
+              />
             </label>
             <label>
               User ID
-              <input value={licenseUserId} onChange={(event) => setLicenseUserId(event.target.value)} placeholder="reader-01" />
+              <input
+                value={licenseUserId}
+                onChange={(event) => setLicenseUserId(event.target.value)}
+                placeholder="reader-01"
+              />
             </label>
             <label>
               Passphrase
-              <input value={licensePassphrase} onChange={(event) => setLicensePassphrase(event.target.value)} placeholder="license passphrase" />
+              <input
+                value={licensePassphrase}
+                onChange={(event) => setLicensePassphrase(event.target.value)}
+                placeholder="license passphrase"
+              />
             </label>
             <label>
               Hint
-              <input value={licenseHint} onChange={(event) => setLicenseHint(event.target.value)} placeholder="optional hint" />
+              <input
+                value={licenseHint}
+                onChange={(event) => setLicenseHint(event.target.value)}
+                placeholder="optional hint"
+              />
             </label>
             <label>
               Print Rights
-              <input value={licenseRightPrint} onChange={(event) => setLicenseRightPrint(event.target.value)} placeholder="leave blank to inherit" />
+              <input
+                value={licenseRightPrint}
+                onChange={(event) => setLicenseRightPrint(event.target.value)}
+                placeholder="leave blank to inherit"
+              />
             </label>
             <label>
               Copy Rights
-              <input value={licenseRightCopy} onChange={(event) => setLicenseRightCopy(event.target.value)} placeholder="leave blank to inherit" />
+              <input
+                value={licenseRightCopy}
+                onChange={(event) => setLicenseRightCopy(event.target.value)}
+                placeholder="leave blank to inherit"
+              />
             </label>
             <label>
               Start Date
-              <input type="date" value={licenseStartDate} onChange={(event) => setLicenseStartDate(event.target.value)} />
+              <input
+                type="date"
+                value={licenseStartDate}
+                onChange={(event) => setLicenseStartDate(event.target.value)}
+              />
             </label>
             <label>
               End Date
-              <input type="date" value={licenseEndDate} onChange={(event) => setLicenseEndDate(event.target.value)} />
+              <input
+                type="date"
+                value={licenseEndDate}
+                onChange={(event) => setLicenseEndDate(event.target.value)}
+              />
             </label>
           </div>
           <div className="catalog-list">
-            <div className="file-meta">Use this form to issue a license for the selected publication. The button in the catalog row fills the publication and rights fields for you.</div>
+            <div className="file-meta">
+              Use this form to issue a license for the selected publication. The
+              button in the catalog row fills the publication and rights fields
+              for you.
+            </div>
           </div>
         </div>
       </section>
 
       <section className="panel">
         <div className="section-head">
-          <h2><KeyRound size={18} /> Created Licenses</h2>
-          <button onClick={() => setCreatedLicenses([])} disabled={createdLicenses.length === 0}>
+          <h2>
+            <KeyRound size={18} /> Created Licenses
+          </h2>
+          <button
+            onClick={() => setCreatedLicenses([])}
+            disabled={createdLicenses.length === 0}
+          >
             Clear
           </button>
         </div>
 
         {createdLicenses.length === 0 && (
-          <div className="file-meta">No licenses created in this browser session yet.</div>
+          <div className="file-meta">
+            No licenses created in this browser session yet.
+          </div>
         )}
 
         {createdLicenses.length > 0 && (
@@ -689,13 +860,23 @@ function App() {
                   <span className="cell-clip">
                     <strong>{license.id}</strong>
                     <br />
-                    <button className="small-button" onClick={() => void copyText(license.id)}>Copy ID</button>
+                    <button
+                      className="small-button"
+                      onClick={() => void copyText(license.id)}
+                    >
+                      Copy ID
+                    </button>
                   </span>
 
                   <span className="cell-clip">
                     {license.publicationID}
                     <br />
-                    <button className="small-button" onClick={() => void copyText(license.publicationID)}>Copy Pub ID</button>
+                    <button
+                      className="small-button"
+                      onClick={() => void copyText(license.publicationID)}
+                    >
+                      Copy Pub ID
+                    </button>
                   </span>
 
                   <span className="cell-clip">
@@ -705,15 +886,33 @@ function App() {
                     <br />
                     hint: {license.hint || "-"}
                     <br />
-                    <button className="small-button" onClick={() => void copyText(license.passphrase)}>Copy Passphrase</button>
+                    <button
+                      className="small-button"
+                      onClick={() => void copyText(license.passphrase)}
+                    >
+                      Copy Passphrase
+                    </button>
                   </span>
 
                   <span className="license-links">
-                    <a href={lcplUrl} target="_blank" rel="noreferrer">LCPL</a>
-                    <a href={lcpdfUrl} target="_blank" rel="noreferrer">LCPDF</a>
-                    <a href={statusUrl} target="_blank" rel="noreferrer">Status</a>
-                    <a href={userUrl} target="_blank" rel="noreferrer">User API</a>
-                    <button className="small-button" onClick={() => void copyText(lcplUrl)}>Copy Reader Link</button>
+                    <a href={lcplUrl} target="_blank" rel="noreferrer">
+                      LCPL
+                    </a>
+                    <a href={lcpdfUrl} target="_blank" rel="noreferrer">
+                      LCPDF
+                    </a>
+                    <a href={statusUrl} target="_blank" rel="noreferrer">
+                      Status
+                    </a>
+                    <a href={userUrl} target="_blank" rel="noreferrer">
+                      User API
+                    </a>
+                    <button
+                      className="small-button"
+                      onClick={() => void copyText(lcplUrl)}
+                    >
+                      Copy Reader Link
+                    </button>
                   </span>
                 </div>
               );
@@ -724,8 +923,13 @@ function App() {
 
       <section className="panel">
         <div className="section-head">
-          <h2><Shield size={18} /> Publisher Approval and Users</h2>
-          <button onClick={() => run(refreshAdminUsers)} disabled={role !== "admin"}>
+          <h2>
+            <Shield size={18} /> Publisher Approval and Users
+          </h2>
+          <button
+            onClick={() => run(refreshAdminUsers)}
+            disabled={role !== "admin"}
+          >
             Refresh Users
           </button>
         </div>
@@ -737,7 +941,9 @@ function App() {
             <span>Status</span>
             <span>Action</span>
           </div>
-          {adminUsers.length === 0 && <div className="file-meta">No users loaded yet.</div>}
+          {adminUsers.length === 0 && (
+            <div className="file-meta">No users loaded yet.</div>
+          )}
           {adminUsers.map((user) => (
             <div className="row admin-row" key={user.id}>
               <span>{user.id}</span>
@@ -745,8 +951,19 @@ function App() {
               <span>{user.role}</span>
               <span>{user.verified ? "verified" : "pending"}</span>
               <span className="row-actions">
-                <button onClick={() => run(() => setAdminUserVerified(user.id, !user.verified))} disabled={role !== "admin"}>
-                  {user.role === "publisher" ? (user.verified ? "Revoke Approval" : "Approve Publisher") : user.verified ? "Unverify" : "Verify"}
+                <button
+                  onClick={() =>
+                    run(() => setAdminUserVerified(user.id, !user.verified))
+                  }
+                  disabled={role !== "admin"}
+                >
+                  {user.role === "publisher"
+                    ? user.verified
+                      ? "Revoke Approval"
+                      : "Approve Publisher"
+                    : user.verified
+                      ? "Unverify"
+                      : "Verify"}
                 </button>
               </span>
             </div>
@@ -756,7 +973,9 @@ function App() {
 
       <section className="panel">
         <div className="section-head">
-          <h2><Activity size={18} /> Process Status</h2>
+          <h2>
+            <Activity size={18} /> Process Status
+          </h2>
           <button onClick={() => run(refreshStatus)}>Refresh</button>
         </div>
         {message && <p className="message">{message}</p>}

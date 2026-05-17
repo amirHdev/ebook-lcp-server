@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-REGISTRY="${REGISTRY:-registry.testmedical.ir:5000}"
+REGISTRY="${REGISTRY:-your-registry.example.com}"
 TAG="${TAG:-latest}"
 BACKEND_IMAGE="${REGISTRY}/lcp-server"
 FRONTEND_IMAGE="${REGISTRY}/lcp-admin-ui"

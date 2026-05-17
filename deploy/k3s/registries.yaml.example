@@ -1,4 +1,4 @@
 mirrors:
-  "registry.testmedical.ir:5000":
+  "registry.yourdomain.com:5000":
     endpoint:
-      - "http://registry.testmedical.ir:5000"
+      - "http://registry.yourdomain.com:5000"

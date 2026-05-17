@@ -9,8 +9,8 @@ info:
     runtime endpoints, and the GraphQL operations used by integration clients
     such as WordPress.
 servers:
-  - url: https://testmedical.ir
-  - url: https://staging.testmedical.ir
+  - url: https://yourdomain.com
+  - url: https://staging.yourdomain.com
 security:
   - bearerAuth: []
 paths:

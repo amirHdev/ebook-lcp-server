@@ -10,10 +10,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - testmedical.ir
+        - yourdomain.com
       secretName: lcp-server-tls
   rules:
-    - host: testmedical.ir
+    - host: yourdomain.com
       http:
         paths:
           - path: /api
