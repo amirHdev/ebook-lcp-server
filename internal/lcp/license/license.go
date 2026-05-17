@@ -59,11 +59,12 @@ func (s *Service) GenerateLicense(ctx context.Context, license *lcp.License) err
 			"user_key": map[string]any{
 				"algorithm": "http://www.w3.org/2001/04/xmlenc#sha256",
 				"text_hint": license.Hint,
-				"hex_value": passphraseHash(license.Passphrase),
+				"hex_value": lcpPassphraseHash(license.Passphrase),
 			},
 		},
 		"rights": map[string]any{},
 	}
+
 	if license.RightPrint != nil {
 		partial["rights"].(map[string]any)["print"] = license.RightPrint
 	}
@@ -84,11 +85,18 @@ func (s *Service) GenerateLicense(ctx context.Context, license *lcp.License) err
 
 	var resp *http.Response
 	var lastErr error
+
 	for attempt := 0; attempt < 5; attempt++ {
-		req, reqErr := http.NewRequestWithContext(ctx, http.MethodPost, s.coreURL+"/contents/"+license.PublicationID+"/license", bytes.NewReader(body))
+		req, reqErr := http.NewRequestWithContext(
+			ctx,
+			http.MethodPost,
+			s.coreURL+"/contents/"+license.PublicationID+"/license",
+			bytes.NewReader(body),
+		)
 		if reqErr != nil {
 			return reqErr
 		}
+
 		req.Header.Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
 		if s.coreUser != "" {
 			req.SetBasicAuth(s.coreUser, s.corePass)
@@ -97,6 +105,7 @@ func (s *Service) GenerateLicense(ctx context.Context, license *lcp.License) err
 		resp, lastErr = s.httpClient.Do(req)
 		if lastErr == nil {
 			defer resp.Body.Close()
+
 			if resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusOK {
 				lastErr = nil
 			} else if resp.StatusCode == http.StatusNotFound {
@@ -106,15 +115,18 @@ func (s *Service) GenerateLicense(ctx context.Context, license *lcp.License) err
 			}
 			break
 		}
+
 		if !strings.Contains(lastErr.Error(), "connect: connection refused") &&
 			!strings.Contains(lastErr.Error(), "connection reset by peer") &&
 			!strings.Contains(lastErr.Error(), "i/o timeout") {
 			return lastErr
 		}
+
 		if attempt < 4 {
 			time.Sleep(time.Duration(attempt+1) * 250 * time.Millisecond)
 		}
 	}
+
 	if lastErr != nil {
 		return lastErr
 	}
@@ -149,26 +161,41 @@ func (s *Service) RevokeLicense(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, s.statusURL+"/licenses/"+id+"/status", bytes.NewReader(body))
+
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPatch,
+		s.statusURL+"/licenses/"+id+"/status",
+		bytes.NewReader(body),
+	)
 	if err != nil {
 		return err
 	}
+
 	req.Header.Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
 	if s.statusUser != "" {
 		req.SetBasicAuth(s.statusUser, s.statusPass)
 	}
+
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusPartialContent {
+
+	if resp.StatusCode != http.StatusOK &&
+		resp.StatusCode != http.StatusNoContent &&
+		resp.StatusCode != http.StatusPartialContent {
 		return fmt.Errorf("status server returned %s", resp.Status)
 	}
+
 	return nil
 }
 
-func passphraseHash(value string) string {
+// lcpPassphraseHash returns the Readium LCP user key hash.
+// LCP requires SHA-256 here for interoperability with LCP-compliant readers.
+// This is not an account-password storage hash.
+func lcpPassphraseHash(value string) string {
 	sum := sha256.Sum256([]byte(value))
 	return hex.EncodeToString(sum[:])
 }
@@ -187,11 +214,13 @@ func (s *Service) GetLicense(ctx context.Context, id string) ([]byte, error) {
 	}
 
 	var lastErr error
+
 	for _, url := range candidates {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
 			return nil, err
 		}
+
 		if s.coreUser != "" {
 			req.SetBasicAuth(s.coreUser, s.corePass)
 		}

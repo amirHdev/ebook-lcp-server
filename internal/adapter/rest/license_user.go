@@ -1,8 +1,6 @@
 package rest
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"net/http"
 	"strings"
 
@@ -11,10 +9,10 @@ import (
 
 type userDataPayload struct {
 	ID             string `json:"id"`
-	Name           string `json:"name"`
-	Email          string `json:"email"`
+	Name           string `json:"name,omitempty"`
+	Email          string `json:"email,omitempty"`
 	PassphraseHash string `json:"passphrasehash"`
-	Hint           string `json:"hint"`
+	Hint           string `json:"hint,omitempty"`
 }
 
 func LicenseUserData(licenses usecaseLicense.LicenseUsecase) http.HandlerFunc {
@@ -43,14 +41,10 @@ func LicenseUserData(licenses usecaseLicense.LicenseUsecase) http.HandlerFunc {
 
 		payload := userDataPayload{
 			ID:             lic.UserID,
-			PassphraseHash: passphraseHash(lic.Passphrase),
+			PassphraseHash: lic.PassphraseHash,
 			Hint:           lic.Hint,
 		}
+
 		writeJSON(w, http.StatusOK, payload)
 	}
-}
-
-func passphraseHash(value string) string {
-	sum := sha256.Sum256([]byte(value))
-	return hex.EncodeToString(sum[:])
 }
