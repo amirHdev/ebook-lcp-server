@@ -2,6 +2,10 @@
 
 Lightweight License Content Protection (LCP) server that exposes REST and GraphQL APIs for processing encrypted publications and issuing licenses. The repository includes the DevOps assets needed to run the service on self-hosted K3s with Docker, Kubernetes, GitLab CI/CD, GitHub Actions, and ArgoCD.
 
+## Project Status
+
+This is a live MVP project. the core REST and GraphQL APIs are functional along with assets for Docker, frontend and self-deployment environments. some of the production deployment tools may need to be configured.
+
 ## Features
 
 - Endpoints for the contract REST API located at `/api/v1/lcp/process`, `/api/v1/lcp/status`, and `/api/v1/admin/metrics`.
