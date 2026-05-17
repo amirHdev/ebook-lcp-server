@@ -1,5 +1,10 @@
-# LCP Server - EBook Manager v2
+# LCP Server
 
+Self-hosted Readium LCP server written in Go for ebook publishers, libraries, and platforms that need license generation, encrypted publication handling, and license status tracking.
+
+## Why this project?
+
+Most LCP/DRM workflows are hard to run, hard to deploy, or tied to custom infrastructure
 Lightweight License Content Protection (LCP) server that exposes REST and GraphQL APIs for processing encrypted publications and issuing licenses. The repository includes the DevOps assets needed to run the service on self-hosted K3s with Docker, Kubernetes, GitLab CI/CD, GitHub Actions, and ArgoCD.
 
 ## Project Status
