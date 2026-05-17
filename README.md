@@ -1,7 +1,8 @@
 # Ebook LCP Server
 
 ![CI](https://github.com/amirHdev/ebook-lcp-server/actions/workflows/go.yml/badge.svg)
-![License](https://img.shields.io/github/license/amirHdev/ebook-lcp-server)
+![CI](https://github.com/amirHdev/ebook-lcp-server/actions/workflows/codeql.yml/badge.svg)
+![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)
 
 Self-hosted Readium LCP server written in Go for ebook publishers, libraries and platforms that need license generation, encrypted publication handling and license status tracking.
 
