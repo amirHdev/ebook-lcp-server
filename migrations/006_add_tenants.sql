@@ -1,0 +1,2 @@
+ALTER TABLE publications ADD COLUMN IF NOT EXISTS tenant_id TEXT NOT NULL DEFAULT 'default';
+ALTER TABLE licenses ADD COLUMN IF NOT EXISTS tenant_id TEXT NOT NULL DEFAULT 'default';

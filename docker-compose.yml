@@ -21,6 +21,59 @@ services:
     ports:
       - "6379:6379"
 
+  lcp-core:
+    build: .
+    command:
+      - /bin/sh
+      - -c
+      - sh /srv/lcp/scripts/compose/prepare-readium-config.sh && exec /usr/local/bin/lcpserver
+    environment:
+      READIUM_LCPSERVER_CONFIG: /srv/readium/source/lcpserver.yaml
+    ports:
+      - "8989:8989"
+    volumes:
+      - ./deploy/compose/readium/lcpserver.yaml:/srv/readium/source/lcpserver.yaml:ro
+      - ./deploy/k8s/readium-core-secret.yaml:/srv/readium/source/readium-core-secret.yaml:ro
+      - ./scripts/compose/prepare-readium-config.sh:/srv/lcp/scripts/compose/prepare-readium-config.sh:ro
+      - readium-config:/srv/readium/config
+      - readium-data:/srv/readium/data
+
+  lsd-core:
+    build: .
+    command:
+      - /bin/sh
+      - -c
+      - sh /srv/lcp/scripts/compose/prepare-readium-config.sh && exec /usr/local/bin/lsdserver
+    environment:
+      READIUM_LSDSERVER_CONFIG: /srv/readium/source/lsdserver.yaml
+    ports:
+      - "8990:8990"
+    volumes:
+      - ./deploy/compose/readium/lsdserver.yaml:/srv/readium/source/lsdserver.yaml:ro
+      - ./deploy/k8s/readium-core-secret.yaml:/srv/readium/source/readium-core-secret.yaml:ro
+      - ./scripts/compose/prepare-readium-config.sh:/srv/lcp/scripts/compose/prepare-readium-config.sh:ro
+      - readium-config:/srv/readium/config
+      - readium-data:/srv/readium/data
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+  swagger-ui:
+    image: swaggerapi/swagger-ui:v5.21.0
+    environment:
+      SWAGGER_JSON_URL: http://localhost:8080/docs/openapi.yaml
+    ports:
+      - "8081:8080"
+
   lcp-server:
     build: .
     depends_on:
@@ -28,14 +81,36 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      lcp-core:
+        condition: service_started
+      lsd-core:
+        condition: service_started
     environment:
       DB_DSN: postgres://lcp:lcp@postgres:5432/lcp?sslmode=disable
       JWT_SECRET: local-dev-secret
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin
       ADMIN_2FA_CODE: "123456"
+      PUBLISHER_USERNAME: publisher
+      PUBLISHER_PASSWORD: publisher
+      LCP_PROVIDER_URI: http://localhost:8080
+      LCP_CORE_URL: http://lcp-core:8989
+      LCP_CORE_USER: admin
+      LCP_CORE_PASSWORD: admin_pass
       SERVER_PORT: :8080
       PUBLIC_BASE_URL: http://localhost:8080
+      STATUS_BASE_URL: http://lsd-core:8990
       DATA_DIR: /var/lib/lcp/data
+      LCP_STORAGE_MODE: s3
       LCP_STORAGE_FS_DIR: /var/lib/lcp/storage
+      LCP_S3_ENDPOINT: minio:9000
+      LCP_S3_PUBLIC_ENDPOINT: localhost:9000
+      LCP_S3_REGION: us-east-1
+      LCP_S3_BUCKET: lcp-publications
+      LCP_S3_ACCESS_KEY: minioadmin
+      LCP_S3_SECRET_KEY: minioadmin
+      LCP_S3_USE_SSL: "false"
+      LCP_S3_SIGNED_URL_TTL_SECONDS: "900"
       LCP_PROFILE: development
     ports:
       - "8080:8080"
@@ -70,4 +145,7 @@ volumes:
   postgres-data:
   lcp-data:
   lcp-storage:
+  readium-config:
+  readium-data:
+  minio-data:
   grafana-data:

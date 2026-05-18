@@ -13,9 +13,13 @@ import (
 	"strings"
 	"time"
 
+	auditservice "github.com/amirhdev/ebook-lcp-server/internal/audit"
 	"github.com/amirhdev/ebook-lcp-server/internal/domain/lcp"
 	"github.com/amirhdev/ebook-lcp-server/internal/lcp/encrypt"
 	"github.com/amirhdev/ebook-lcp-server/internal/pkg/id"
+	publicationstorage "github.com/amirhdev/ebook-lcp-server/internal/storage"
+	"github.com/amirhdev/ebook-lcp-server/internal/tenant"
+	"github.com/amirhdev/ebook-lcp-server/internal/webhook"
 )
 
 type PublicationUsecase interface {
@@ -25,12 +29,21 @@ type PublicationUsecase interface {
 }
 
 type publicationUsecase struct {
-	repo lcp.PublicationRepository
-	enc  encrypt.Encrypter
+	repo  lcp.PublicationRepository
+	enc   encrypt.Encrypter
+	store publicationstorage.PublicationStorage
+	hooks webhook.Publisher
+	audit auditservice.Recorder
 }
 
-func NewPublicationUsecase(repo lcp.PublicationRepository, enc encrypt.Encrypter) PublicationUsecase {
-	return &publicationUsecase{repo, enc}
+func NewPublicationUsecase(repo lcp.PublicationRepository, enc encrypt.Encrypter, store publicationstorage.PublicationStorage, hooks webhook.Publisher, audit auditservice.Recorder) PublicationUsecase {
+	if store == nil {
+		store = publicationstorage.NewFilesystemPublicationStorage()
+	}
+	if hooks == nil {
+		hooks = webhook.NopPublisher{}
+	}
+	return &publicationUsecase{repo: repo, enc: enc, store: store, hooks: hooks, audit: audit}
 }
 
 func (u *publicationUsecase) UploadAndEncrypt(ctx context.Context, title string, file io.Reader) (*lcp.Publication, error) {
@@ -62,6 +75,10 @@ func (u *publicationUsecase) UploadAndEncrypt(ctx context.Context, title string,
 	if err != nil {
 		return nil, err
 	}
+	encryptedURI, err := u.store.StoreEncrypted(ctx, encryptedPath, pubID)
+	if err != nil {
+		return nil, err
+	}
 	sourcePath := filepath.Join(filepath.Dir(encryptedPath), pubID+tempExt)
 	if err := os.WriteFile(sourcePath, raw, 0o644); err != nil {
 		return nil, err
@@ -70,17 +87,29 @@ func (u *publicationUsecase) UploadAndEncrypt(ctx context.Context, title string,
 	// Store publication metadata
 	pub := &lcp.Publication{
 		ID:            pubID,
+		TenantID:      tenant.IDFromContext(ctx),
 		Title:         title,
 		Status:        "active",
 		FilePath:      sourcePath,
 		EncryptedPath: encryptedPath,
-		EncryptedURI:  encryptedPath,
+		EncryptedURI:  encryptedURI,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 	}
 	err = u.repo.Save(ctx, pub)
 	if err != nil {
 		return nil, err
+	}
+	_ = u.hooks.Publish(ctx, webhook.Event{
+		Type:      webhook.EventPublicationUploaded,
+		CreatedAt: time.Now(),
+		Data: map[string]string{
+			"id":    pub.ID,
+			"title": pub.Title,
+		},
+	})
+	if u.audit != nil {
+		_ = u.audit.Record(ctx, "publication.uploaded", "publication", pub.ID)
 	}
 
 	return pub, nil
@@ -136,9 +165,27 @@ func httpDetectContentType(raw []byte) string {
 }
 
 func (u *publicationUsecase) GetAll(ctx context.Context) ([]*lcp.Publication, error) {
-	return u.repo.FindAll(ctx)
+	pubs, err := u.repo.FindAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+	tenantID := tenant.IDFromContext(ctx)
+	filtered := make([]*lcp.Publication, 0, len(pubs))
+	for _, pub := range pubs {
+		if pub.TenantID == "" || pub.TenantID == tenantID {
+			filtered = append(filtered, pub)
+		}
+	}
+	return filtered, nil
 }
 
 func (u *publicationUsecase) GetByID(ctx context.Context, id string) (*lcp.Publication, error) {
-	return u.repo.FindByID(ctx, id)
+	pub, err := u.repo.FindByID(ctx, id)
+	if err != nil || pub == nil {
+		return pub, err
+	}
+	if pub.TenantID != "" && pub.TenantID != tenant.IDFromContext(ctx) {
+		return nil, nil
+	}
+	return pub, nil
 }

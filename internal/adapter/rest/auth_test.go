@@ -9,7 +9,7 @@ import (
 )
 
 func TestLoginReturnsAdminTokenWithTwoFactor(t *testing.T) {
-	handler := NewAuthHandler("secret", "toghyani", "admin-pass", "publisher01", "publisher-pass", "65b5ec")
+	handler := NewAuthHandler("secret", "toghyani", "admin-pass", "publisher01", "publisher-pass", "65b5ec", "tenant-a")
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(`{"username":"toghyani","password":"admin-pass","twoFactor":"65b5ec"}`))
 	rec := httptest.NewRecorder()
 
@@ -28,7 +28,7 @@ func TestLoginReturnsAdminTokenWithTwoFactor(t *testing.T) {
 }
 
 func TestLoginReturnsPublisherTokenWithoutTwoFactor(t *testing.T) {
-	handler := NewAuthHandler("secret", "toghyani", "admin-pass", "publisher01", "publisher-pass", "65b5ec")
+	handler := NewAuthHandler("secret", "toghyani", "admin-pass", "publisher01", "publisher-pass", "65b5ec", "tenant-a")
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(`{"username":"publisher01","password":"publisher-pass"}`))
 	rec := httptest.NewRecorder()
 

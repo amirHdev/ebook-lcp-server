@@ -5,6 +5,7 @@ import "time"
 // License captures access information for a publication.
 type License struct {
 	ID             string     `db:"id" json:"id"`
+	TenantID       string     `db:"tenant_id" json:"tenantId,omitempty"`
 	PublicationID  string     `db:"publication_id" json:"publication_id"`
 	UserID         string     `db:"user_id" json:"user_id"`
 	Passphrase     string     `db:"passphrase" json:"passphrase"`

@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/amirhdev/ebook-lcp-server/internal/ratelimit"
 )
 
 func TestParseBearerToken(t *testing.T) {
@@ -38,7 +40,7 @@ func TestParseBearerTokenRejectsBadSignature(t *testing.T) {
 }
 
 func TestRequireRoleAllowsAdminWithoutTwoFactorOnNonAdminEndpoint(t *testing.T) {
-	mw := New("secret", "123456")
+	mw := New("secret", "123456", nil)
 	token := buildTestToken(t, Claims{
 		Subject: "user-1",
 		Role:    "admin",
@@ -59,7 +61,7 @@ func TestRequireRoleAllowsAdminWithoutTwoFactorOnNonAdminEndpoint(t *testing.T) 
 }
 
 func TestRequireRoleRequiresTwoFactorOnAdminEndpoint(t *testing.T) {
-	mw := New("secret", "123456")
+	mw := New("secret", "123456", nil)
 	token := buildTestToken(t, Claims{
 		Subject: "user-1",
 		Role:    "admin",
@@ -76,6 +78,29 @@ func TestRequireRoleRequiresTwoFactorOnAdminEndpoint(t *testing.T) {
 
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("expected forbidden, got %d", rec.Code)
+	}
+}
+
+func TestRequireRoleAppliesRateLimit(t *testing.T) {
+	mw := New("secret", "", ratelimit.New(1, time.Minute))
+	token := buildTestToken(t, Claims{
+		Subject: "publisher-1",
+		Role:    "publisher",
+		Exp:     time.Now().Add(time.Hour).Unix(),
+	}, "secret")
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/lcp/status", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	handler := mw.RequireRole("publisher")(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+
+	first := httptest.NewRecorder()
+	handler.ServeHTTP(first, req)
+	second := httptest.NewRecorder()
+	handler.ServeHTTP(second, req)
+
+	if second.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected %d, got %d", http.StatusTooManyRequests, second.Code)
 	}
 }
 

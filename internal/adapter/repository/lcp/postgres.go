@@ -59,6 +59,7 @@ func EnsurePostgresSchema(ctx context.Context, db *sql.DB) error {
 		)`,
 		`CREATE TABLE IF NOT EXISTS publications (
 			id VARCHAR(36) PRIMARY KEY,
+			tenant_id TEXT NOT NULL DEFAULT 'default',
 			title VARCHAR(255) NOT NULL,
 			authors JSONB NOT NULL DEFAULT '[]'::jsonb,
 			language TEXT NOT NULL DEFAULT '',
@@ -77,6 +78,7 @@ func EnsurePostgresSchema(ctx context.Context, db *sql.DB) error {
 		)`,
 		`CREATE TABLE IF NOT EXISTS licenses (
 			id VARCHAR(36) PRIMARY KEY,
+			tenant_id TEXT NOT NULL DEFAULT 'default',
 			publication_id VARCHAR(36) NOT NULL,
 			user_id VARCHAR(36) NOT NULL,
 			passphrase TEXT NOT NULL,
@@ -99,6 +101,7 @@ func EnsurePostgresSchema(ctx context.Context, db *sql.DB) error {
 			FOREIGN KEY (publication_id) REFERENCES publications(id)
 		)`,
 		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS authors JSONB NOT NULL DEFAULT '[]'::jsonb`,
+		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS tenant_id TEXT NOT NULL DEFAULT 'default'`,
 		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS subjects JSONB NOT NULL DEFAULT '[]'::jsonb`,
 		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS tags JSONB NOT NULL DEFAULT '[]'::jsonb`,
@@ -110,6 +113,7 @@ func EnsurePostgresSchema(ctx context.Context, db *sql.DB) error {
 		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS license_duration_days INTEGER NOT NULL DEFAULT 30`,
 		`ALTER TABLE publications ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`,
 		`ALTER TABLE licenses ADD COLUMN IF NOT EXISTS lcpl TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE licenses ADD COLUMN IF NOT EXISTS tenant_id TEXT NOT NULL DEFAULT 'default'`,
 		`ALTER TABLE licenses DROP CONSTRAINT IF EXISTS licenses_publication_id_fkey`,
 		`ALTER TABLE licenses DROP CONSTRAINT IF EXISTS licenses_user_id_fkey`,
 	}
@@ -140,16 +144,17 @@ func (r *postgresPublicationRepository) Save(ctx context.Context, pub *domain.Pu
 	}
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO publications (
-			id, title, authors, language, subjects, tags, status, right_print, right_copy,
+			id, tenant_id, title, authors, language, subjects, tags, status, right_print, right_copy,
 			file_path, encrypted_path, encrypted_uri, checksum, license_duration_days,
 			created_at, updated_at
 		)
 		VALUES (
-			$1, $2, $3::jsonb, $4, $5::jsonb, $6::jsonb, $7, $8, $9,
-			$10, $11, $12, $13, $14, $15, $16
+			$1, $2, $3, $4::jsonb, $5, $6::jsonb, $7::jsonb, $8, $9, $10,
+			$11, $12, $13, $14, $15, $16, $17
 		)
 		ON CONFLICT (id) DO UPDATE SET
 			title = EXCLUDED.title,
+			tenant_id = EXCLUDED.tenant_id,
 			authors = EXCLUDED.authors,
 			language = EXCLUDED.language,
 			subjects = EXCLUDED.subjects,
@@ -163,14 +168,14 @@ func (r *postgresPublicationRepository) Save(ctx context.Context, pub *domain.Pu
 			checksum = EXCLUDED.checksum,
 			license_duration_days = EXCLUDED.license_duration_days,
 			updated_at = EXCLUDED.updated_at
-	`, pub.ID, pub.Title, mustJSON(pub.Authors), pub.Language, mustJSON(pub.Subjects), mustJSON(pub.Tags), pub.Status,
+	`, pub.ID, pub.TenantID, pub.Title, mustJSON(pub.Authors), pub.Language, mustJSON(pub.Subjects), mustJSON(pub.Tags), pub.Status,
 		pub.RightPrint, pub.RightCopy, pub.FilePath, pub.EncryptedPath, pub.EncryptedURI, pub.Checksum, pub.LicenseDurationDays, pub.CreatedAt, pub.UpdatedAt)
 	return err
 }
 
 func (r *postgresPublicationRepository) FindAll(ctx context.Context) ([]*domain.Publication, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT id, title, authors, language, subjects, tags, status,
+		SELECT id, tenant_id, title, authors, language, subjects, tags, status,
 			right_print, right_copy, file_path, encrypted_path, encrypted_uri, checksum, license_duration_days, created_at, updated_at
 		FROM publications
 		ORDER BY created_at DESC
@@ -197,7 +202,7 @@ func (r *postgresPublicationRepository) FindAll(ctx context.Context) ([]*domain.
 
 func (r *postgresPublicationRepository) FindByID(ctx context.Context, id string) (*domain.Publication, error) {
 	row := r.db.QueryRowContext(ctx, `
-		SELECT id, title, authors, language, subjects, tags, status,
+		SELECT id, tenant_id, title, authors, language, subjects, tags, status,
 			right_print, right_copy, file_path, encrypted_path, encrypted_uri, checksum, license_duration_days, created_at, updated_at
 		FROM publications
 		WHERE id = $1
@@ -212,12 +217,13 @@ func (r *postgresPublicationRepository) FindByID(ctx context.Context, id string)
 func (r *postgresLicenseRepository) Save(ctx context.Context, license *domain.License) error {
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO licenses (
-			id, publication_id, user_id, passphrase, hint, publication_url,
+			id, tenant_id, publication_id, user_id, passphrase, hint, publication_url,
 			right_print, right_copy, start_date, end_date, created_at, lcpl
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		ON CONFLICT (id) DO UPDATE SET
 			passphrase = EXCLUDED.passphrase,
+			tenant_id = EXCLUDED.tenant_id,
 			hint = EXCLUDED.hint,
 			publication_url = EXCLUDED.publication_url,
 			right_print = EXCLUDED.right_print,
@@ -225,7 +231,7 @@ func (r *postgresLicenseRepository) Save(ctx context.Context, license *domain.Li
 			start_date = EXCLUDED.start_date,
 			end_date = EXCLUDED.end_date,
 			lcpl = EXCLUDED.lcpl
-	`, license.ID, license.PublicationID, license.UserID, license.Passphrase, license.Hint,
+	`, license.ID, license.TenantID, license.PublicationID, license.UserID, license.Passphrase, license.Hint,
 		license.PublicationURL, license.RightPrint, license.RightCopy, license.StartDate,
 		license.EndDate, license.CreatedAt, license.LCPL)
 	return err
@@ -233,7 +239,7 @@ func (r *postgresLicenseRepository) Save(ctx context.Context, license *domain.Li
 
 func (r *postgresLicenseRepository) FindByID(ctx context.Context, id string) (*domain.License, error) {
 	row := r.db.QueryRowContext(ctx, `
-		SELECT id, publication_id, user_id, passphrase, hint, publication_url,
+		SELECT id, tenant_id, publication_id, user_id, passphrase, hint, publication_url,
 			right_print, right_copy, start_date, end_date, created_at, lcpl
 		FROM licenses
 		WHERE id = $1
@@ -247,7 +253,7 @@ func (r *postgresLicenseRepository) FindByID(ctx context.Context, id string) (*d
 
 func (r *postgresLicenseRepository) FindByPublication(ctx context.Context, publicationID *string) ([]*domain.License, error) {
 	query := `
-		SELECT id, publication_id, user_id, passphrase, hint, publication_url,
+		SELECT id, tenant_id, publication_id, user_id, passphrase, hint, publication_url,
 			right_print, right_copy, start_date, end_date, created_at, lcpl
 		FROM licenses
 	`
@@ -315,7 +321,7 @@ func scanPublication(row rowScanner) (*domain.Publication, error) {
 		authors, subjects, tags []byte
 		rightPrint, rightCopy   sql.NullInt64
 	)
-	err := row.Scan(&pub.ID, &pub.Title, &authors, &pub.Language, &subjects, &tags, &pub.Status,
+	err := row.Scan(&pub.ID, &pub.TenantID, &pub.Title, &authors, &pub.Language, &subjects, &tags, &pub.Status,
 		&rightPrint, &rightCopy, &pub.FilePath, &pub.EncryptedPath, &pub.EncryptedURI, &pub.Checksum, &pub.LicenseDurationDays, &pub.CreatedAt, &pub.UpdatedAt)
 	if err != nil {
 		return nil, err
@@ -342,7 +348,7 @@ func mustJSON(v interface{}) string {
 func scanLicense(row rowScanner) (*domain.License, error) {
 	license := &domain.License{}
 	var rightPrint, rightCopy sql.NullInt64
-	err := row.Scan(&license.ID, &license.PublicationID, &license.UserID, &license.Passphrase,
+	err := row.Scan(&license.ID, &license.TenantID, &license.PublicationID, &license.UserID, &license.Passphrase,
 		&license.Hint, &license.PublicationURL, &rightPrint, &rightCopy,
 		&license.StartDate, &license.EndDate, &license.CreatedAt, &license.LCPL)
 	license.RightPrint = nullIntPtr(rightPrint)

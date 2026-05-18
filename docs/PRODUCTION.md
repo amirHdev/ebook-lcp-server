@@ -40,6 +40,11 @@ This document outlines best practices for deploying **ebook-lcp-server** in a pr
 - [ ] TLS + HTTPS configured
 - [ ] 2FA enabled for admins
 - [ ] Using PostgreSQL + S3
+- [ ] `LCP_STORAGE_MODE=s3` configured with a private bucket
+- [ ] `LCP_S3_PUBLIC_ENDPOINT` and signed URL TTL configured
+- [ ] Webhook receivers use HTTPS and verify `X-LCP-Signature`
+- [ ] `RATE_LIMIT_RPM` reviewed for expected traffic
+- [ ] `DEFAULT_TENANT_ID` replaced or external identity provider issues tenant-aware tokens
 - [ ] Secrets managed externally
 - [ ] Monitoring & alerting active
 - [ ] Backups configured and tested

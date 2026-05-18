@@ -2,12 +2,16 @@ package publication
 
 import (
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/amirhdev/ebook-lcp-server/internal/auth"
 	domain "github.com/amirhdev/ebook-lcp-server/internal/domain/lcp"
+	"github.com/amirhdev/ebook-lcp-server/internal/webhook"
 )
 
 type fakeRepo struct {
@@ -39,11 +43,27 @@ func (e fakeEncrypter) Encrypt(inputPath, contentID, filename string) (string, e
 	return out, os.WriteFile(out, []byte("encrypted"), 0o644)
 }
 
+type fakeStorage struct {
+	uri string
+}
+
+func (s fakeStorage) StoreEncrypted(_ context.Context, _ string, _ string) (string, error) {
+	return s.uri, nil
+}
+
+func (s fakeStorage) OpenEncrypted(_ context.Context, _ string) (io.ReadCloser, error) {
+	return nil, nil
+}
+
+func (s fakeStorage) SignedURL(_ context.Context, _ string, _ time.Duration) (string, bool, error) {
+	return "", false, nil
+}
+
 func TestUploadAndEncryptCreatesPublication(t *testing.T) {
 	dir := t.TempDir()
 
 	repo := &fakeRepo{}
-	uc := NewPublicationUsecase(repo, fakeEncrypter{dir: dir})
+	uc := NewPublicationUsecase(repo, fakeEncrypter{dir: dir}, nil, nil, nil)
 
 	pub, err := uc.UploadAndEncrypt(
 		context.Background(),
@@ -71,8 +91,22 @@ func TestUploadAndEncryptCreatesPublication(t *testing.T) {
 	}
 }
 
+func TestUploadAndEncryptStoresEncryptedURI(t *testing.T) {
+	dir := t.TempDir()
+	repo := &fakeRepo{}
+	uc := NewPublicationUsecase(repo, fakeEncrypter{dir: dir}, fakeStorage{uri: "s3://books/publications/book.epub"}, nil, nil)
+
+	pub, err := uc.UploadAndEncrypt(context.Background(), "Book", strings.NewReader("%PDF- fake pdf"))
+	if err != nil {
+		t.Fatalf("UploadAndEncrypt failed: %v", err)
+	}
+	if pub.EncryptedURI != "s3://books/publications/book.epub" {
+		t.Fatalf("unexpected encrypted URI: %s", pub.EncryptedURI)
+	}
+}
+
 func TestUploadAndEncryptRejectsMissingInput(t *testing.T) {
-	uc := NewPublicationUsecase(&fakeRepo{}, fakeEncrypter{dir: t.TempDir()})
+	uc := NewPublicationUsecase(&fakeRepo{}, fakeEncrypter{dir: t.TempDir()}, nil, nil, nil)
 
 	_, err := uc.UploadAndEncrypt(context.Background(), "", strings.NewReader("x"))
 	if err == nil {
@@ -93,7 +127,7 @@ func TestGetAllAndGetByID(t *testing.T) {
 		},
 	}
 
-	uc := NewPublicationUsecase(repo, fakeEncrypter{dir: t.TempDir()})
+	uc := NewPublicationUsecase(repo, fakeEncrypter{dir: t.TempDir()}, nil, nil, nil)
 
 	all, err := uc.GetAll(context.Background())
 	if err != nil {
@@ -109,5 +143,44 @@ func TestGetAllAndGetByID(t *testing.T) {
 	}
 	if found == nil {
 		t.Fatal("expected publication")
+	}
+}
+
+func TestGetByIDHidesOtherTenant(t *testing.T) {
+	repo := &fakeRepo{
+		saved: &domain.Publication{ID: "pub1", Title: "Book", TenantID: "tenant-b"},
+	}
+	uc := NewPublicationUsecase(repo, fakeEncrypter{dir: t.TempDir()}, nil, nil, nil)
+	ctx := auth.WithClaims(context.Background(), &auth.Claims{TenantID: "tenant-a"})
+
+	found, err := uc.GetByID(ctx, "pub1")
+	if err != nil {
+		t.Fatalf("GetByID failed: %v", err)
+	}
+	if found != nil {
+		t.Fatal("expected publication from another tenant to be hidden")
+	}
+}
+
+type fakeWebhookPublisher struct {
+	event webhook.Event
+}
+
+func (p *fakeWebhookPublisher) Publish(_ context.Context, event webhook.Event) error {
+	p.event = event
+	return nil
+}
+
+func TestUploadAndEncryptPublishesWebhook(t *testing.T) {
+	dir := t.TempDir()
+	hooks := &fakeWebhookPublisher{}
+	uc := NewPublicationUsecase(&fakeRepo{}, fakeEncrypter{dir: dir}, nil, hooks, nil)
+
+	_, err := uc.UploadAndEncrypt(context.Background(), "Book", strings.NewReader("%PDF- fake pdf"))
+	if err != nil {
+		t.Fatalf("UploadAndEncrypt failed: %v", err)
+	}
+	if hooks.event.Type != webhook.EventPublicationUploaded {
+		t.Fatalf("unexpected event type: %s", hooks.event.Type)
 	}
 }

@@ -1,97 +1,195 @@
-# LCP Server - EBook Manager v2
+# Open-source Readium LCP server in Go
 
-Lightweight License Content Protection (LCP) server that exposes REST and GraphQL APIs for processing encrypted publications and issuing licenses. The repository includes the DevOps assets needed to run the service on self-hosted K3s with Docker, Kubernetes, GitLab CI/CD, GitHub Actions, and ArgoCD.
+Protect EPUB and PDF files with Readium LCP DRM.
 
-## Project Status
-
-This is a live MVP project. the core REST and GraphQL APIs are functional along with assets for Docker, frontend and self-deployment environments. some of the production deployment tools may need to be configured.
-
-## Features
-
-- Endpoints for the contract REST API located at `/api/v1/lcp/process`, `/api/v1/lcp/status`, and `/api/v1/admin/metrics`.
-- JWT auth with RBAC roles (admin, publisher, user, guest) and 2FA for admin on `/api/v1/admin/*` via `X-2FA-Code`.
-- The GraphQL API endpoint available at `/graphql` for publishing and licensing.
-- The pluggable encryption library with support for upstream LCP tool `lcpencrypt` for handling real LCP publication operations.
-- In-memory repository implementations with optional JSON-based persistence in `DATA_DIR`.
-- Endpoint `/publications/{id}/content` where the client can download encrypted assets by following links from licenses.
-- Deployment artefacts for Docker, Kubernetes liveness and readiness probes, PVCs, HPA, Network Policy, backup CronJob, and ArgoCD GitOps pipeline.
-- Registry manifests of the self-hosted registry images in `deploy/registry`.
-- React/TypeScript frontend with an admin UI for processing publications, viewing status, and metrics in `frontend`.
-- CI pipelines that run the formatter, vet, tests, Trivy security scanning, builds, and deploys the Docker container image.
-
-## Configurations
-
-Define the below environment variables (check `.env.example & .env.local` for default values):
-
-- `DB_DSN`: Data source name for database connections (required if used by persistent storage adapter).
-- `LCP_PROFILE`: Either `basic` or `production`.
-- `LCP_CERTIFICATE`/`LCP_PRIVATE_KEY`: Path for DRM certificates/keys.
-- `LCP_STORAGE_MODE`: Can be either `fs`(default) or `s3`.
-- `LCP_STORAGE_FS_DIR`: The destination directory for storage of encrypted files when `LCP_STORAGE_MODE` is set to `fs`.
-- `LCP_S3_REGION`, `LCP_S3_BUCKET`, `LCP_S3_ACCESS_KEY`, `LCP_S3_SECRET_KEY`: Required when using S3-based storage (`LCP_STORAGE_MODE=s3`).
-- `JWT_SECRET`: Secret for any JWT-secured APIs created in the future.
-- `ADMIN_2FA_CODE`: Code that may be required for admin roles (optional).
-- `SERVER_PORT`: Address for listening service (default `:8080`).
-- `PUBLIC_BASE_URL`: Public base URL used to construct download URL (default `http://localhost:PORT`).
-
-## Local development
-
-```bash
-# Install dependencies and start the API
-cp .env.example .env  # then edit values
-export $(grep -v '^#' .env | xargs)
-go run ./cmd/server
-```
-
-The GraphQL playground will be available at `http://localhost:8080/graphql`.
-
-### REST API
-
-All contract endpoints require a Bearer JWT signed with `JWT_SECRET`. Admin calls under `/api/v1/admin/*` also require `X-2FA-Code` when `ADMIN_2FA_CODE` is set.
-
-```bash
-curl -X POST http://localhost:8080/api/v1/lcp/process \
-  -H "Authorization: Bearer $JWT" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Example","file":"aGVsbG8="}'
-
-curl http://localhost:8080/api/v1/lcp/status \
-  -H "Authorization: Bearer $JWT"
-
-curl http://localhost:8080/api/v1/admin/metrics \
-  -H "Authorization: Bearer $ADMIN_JWT" \
-  -H "X-2FA-Code: $ADMIN_2FA_CODE"
-```
-
-### GraphQL upload notes
-
-The `uploadPublication` mutation expects the `file` argument as a **base64-encoded string**. Example variables:
-
-```json
-{
-  "title": "My Book",
-  "file": "<base64 encoded content>"
-}
-```
-
-## Docker
-
-```bash
-docker build -t lcp-server:local .
-docker run -p 8080:8080 --env-file .env lcp-server:local
-```
-
-The multi-stage Dockerfile compiles the Go binary and ships a minimal distroless runtime image suitable for production.
-
-For the full local stack:
+- Encrypt books
+- Generate licenses
+- Self-hosted
+- REST API
+- Docker ready
+- PostgreSQL support
+- Works with Thorium Reader
 
 ```bash
 docker compose up --build
 ```
 
-This starts PostgreSQL, Redis, the backend, the admin UI, Prometheus, and Grafana.
+```bash
+sh scripts/demo-local.sh
+```
 
-## Frontend
+## What is in the repo
+
+The project is centered on the normal LCP workflow: ingest a book, protect it, create licenses for readers, and expose enough API around that flow to run it as a service.
+
+- REST and GraphQL APIs for publications, licenses, status, and admin tasks
+- JWT auth with admin and publisher roles
+- PostgreSQL-backed repositories
+- Readium `lcpencrypt` integration for EPUB and PDF processing
+- Admin UI
+- OpenAPI files and docs endpoints
+- Audit log endpoint
+- Webhook delivery
+- Per-tenant publication and license scoping
+- Docker, Kubernetes, K3s, ArgoCD, Prometheus, and Grafana files
+- Public-domain EPUB example under `examples/pride-and-prejudice`
+
+It is still moving, but the main pieces are here already.
+
+## Local stack
+
+For local work, the easiest path is the Compose stack. It gives you the API, the Readium sidecars, storage, and the small admin surface in one place.
+
+```bash
+docker compose up --build
+```
+
+Services started by the current compose file:
+
+| Service | URL |
+| --- | --- |
+| API | `http://localhost:8080` |
+| Admin UI | `http://localhost:5173` |
+| PostgreSQL | `localhost:5432` |
+| Readium LCP server | `http://localhost:8989` |
+| Readium LSD server | `http://localhost:8990` |
+| Swagger UI | `http://localhost:8081` |
+| MinIO API | `http://localhost:9000` |
+| MinIO console | `http://localhost:9001` |
+| Prometheus | `http://localhost:9090` |
+| Grafana | `http://localhost:3000` |
+
+The admin UI uses these local credentials:
+
+```text
+username: admin
+password: admin
+2FA code: 123456
+```
+
+The compose file is meant to bring up the whole local stack, including the Readium LCP and LSD services. It also includes MinIO for the S3 storage path.
+
+Run the local demo after the containers are up:
+
+```bash
+sh scripts/demo-local.sh
+```
+
+It uploads the sample EPUB, creates a license, and prints the publication ID, license ID, and license URL.
+
+## API examples
+
+The API is token-based. The built-in login route is mainly useful for local work and demos; in a real deployment you will likely put stronger identity management around it.
+
+Get a token:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin","twoFactor":"123456"}'
+```
+
+Check service status:
+
+```bash
+curl http://localhost:8080/api/v1/lcp/status \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Upload the sample EPUB and create a license:
+
+```bash
+sh scripts/demo-local.sh
+```
+
+Docs endpoints:
+
+- `http://localhost:8080/swagger.yaml`
+- `http://localhost:8080/swagger.json`
+- `http://localhost:8080/docs/openapi.yaml`
+- `http://localhost:8080/docs/swagger.json`
+
+Postman collection: `docs/postman/lcp-server.postman_collection.json`
+
+## Example book
+
+There is a sample book in the repo so you do not need to hunt for test content before trying the flow.
+
+The repo includes a public-domain copy of *Pride and Prejudice*:
+
+```bash
+examples/pride-and-prejudice/pride-and-prejudice.epub
+```
+
+See `examples/pride-and-prejudice/README.md` for the demo notes.
+
+## Reader compatibility
+
+The flow is based on Readium LCP and is intended for LCP-compatible readers such as Thorium Reader. Fixtures used while checking compatibility live under `examples/lcp-fixtures`.
+
+## Configuration
+
+The defaults are aimed at local development. Start from the example file, then change the values that describe your own deployment.
+
+Start from `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+The main settings are:
+
+| Variable | Purpose |
+| --- | --- |
+| `DB_DSN` | PostgreSQL connection string |
+| `LCP_PROVIDER_URI` | Public provider URI written into licenses |
+| `LCP_CORE_URL` | Readium LCP core service URL |
+| `LCP_CORE_USER`, `LCP_CORE_PASSWORD` | Credentials for the Readium core service |
+| `LCP_STORAGE_FS_DIR` | Directory used for encrypted publication files |
+| `LCP_S3_ENDPOINT` | S3-compatible endpoint, such as `localhost:9000` for MinIO |
+| `LCP_S3_PUBLIC_ENDPOINT` | Public endpoint used when generating signed download URLs |
+| `LCP_S3_REGION` | S3 region |
+| `LCP_S3_BUCKET` | Bucket for encrypted publication files |
+| `LCP_S3_ACCESS_KEY`, `LCP_S3_SECRET_KEY` | S3 credentials |
+| `LCP_S3_USE_SSL` | Whether the S3 endpoint uses TLS |
+| `LCP_S3_SIGNED_URL_TTL_SECONDS` | Lifetime for signed download URLs |
+| `JWT_SECRET` | Secret used to sign API tokens |
+| `ADMIN_USERNAME`, `ADMIN_PASSWORD` | Admin login |
+| `PUBLISHER_USERNAME`, `PUBLISHER_PASSWORD` | Publisher login |
+| `DEFAULT_TENANT_ID` | Tenant ID included in locally issued login tokens |
+| `PUBLIC_BASE_URL` | Public base URL used in generated links |
+| `STATUS_BASE_URL` | License status server base URL |
+| `RATE_LIMIT_RPM` | Per-subject request limit for protected routes |
+| `WEBHOOK_URLS` | Comma-separated webhook targets |
+| `WEBHOOK_SECRET` | Optional secret used to sign webhook payloads |
+
+Set `LCP_STORAGE_MODE=s3` to store encrypted publication files in S3-compatible storage such as MinIO. When S3 mode is enabled, `/publications/{id}/content` redirects to a short-lived signed URL instead of streaming the object through the API server. The default mode is still `fs`.
+
+The service also has a few integration features that are useful once more than one system is involved:
+
+Webhook events:
+
+- `publication.uploaded`
+- `license.created`
+- `license.revoked`
+
+Publications and licenses carry a `tenantId`. Tokens issued by the built-in login flow include `DEFAULT_TENANT_ID`, and reads are scoped to that tenant.
+
+Admin audit entries are available at `GET /api/v1/admin/audit`.
+
+## Development
+
+If you prefer to run parts of the stack yourself while working on the code, the API and frontend can still be started separately.
+
+Run the API directly:
+
+```bash
+cp .env.example .env
+export $(grep -v '^#' .env | xargs)
+go run ./cmd/server
+```
+
+Run the frontend:
 
 ```bash
 cd frontend
@@ -99,91 +197,60 @@ npm ci
 npm run dev
 ```
 
-The admin UI is available at `http://localhost:5173` in development.
+Run tests:
 
-## Kubernetes
+```bash
+go test ./...
+```
 
-Apply the manifests with Kustomize:
+## Deployment
+
+The repo contains both a plain Docker path and Kubernetes manifests. The Kubernetes side is more complete today, especially around the Readium core services.
+
+Docker:
+
+```bash
+docker build -t lcp-server:local .
+docker run -p 8080:8080 --env-file .env lcp-server:local
+```
+
+Kubernetes:
 
 ```bash
 kubectl apply -k deploy/overlays/prod
 ```
 
-K3s-compatible defaults are used in the deployment: ingress traefik, storage local-path, and built-in cluster components. Change the overlay image links and hostnames as required.
-Images are pushed to and pulled from your own container registry. Update the image references in `deploy/overlays/prod/kustomization.yaml` (or equivalent) to match your registry.
+K3s scripts, ArgoCD files, monitoring manifests, and production notes are also in the repo.
 
-## ArgoCD
+## Roadmap
 
-The ArgoCD root application at `deploy/argocd/root-application.yaml` continuously syncs the environment apps from this repo:
+The short version is below. The full file is more useful if you want to see the order of work and release gates.
 
-```bash
-kubectl apply -n argocd -f deploy/argocd/root-application.yaml
-```
+- Hosted OpenAPI docs
+- One-click deployment examples
+- Reader demos for Thorium, Readium Swift, and Android
 
-## GitLab CI/CD
-
-`.gitlab-ci.yml` defines four stages:
-
-1. **lint**: runs `gofmt -l` and `go vet`.
-2. **test**: executes `go test ./...`.
-3. **build**: builds the Docker image and optionally pushes it when registry credentials exist.
-4. **deploy**: applies the Kustomize overlays to the cluster (expects `kubectl` credentials in CI variables).
-
-Set `CI_REGISTRY`, `CI_REGISTRY_USER`, `CI_REGISTRY_PASSWORD`, and `KUBECONFIG` (or in-cluster service account variables) in GitLab to enable full automation.
+The fuller implementation plan is in `docs/roadmap.md`.
 
 ## Repository layout
 
-- `cmd/server`: HTTP server wiring, GraphQL handler, and LCP use cases.
-- `internal/auth`: JWT validation, RBAC, and admin 2FA middleware.
-- `internal/adapter/rest`: REST endpoints required by the contract.
-- `internal/usecase/lcp`: Business logic for publications and licenses.
-- `internal/adapter/graphql`: GraphQL schema and resolvers.
-- `deploy/k8s`: Production manifests with Kustomize.
-- `frontend`: React/TypeScript admin dashboard.
-- `deploy/argocd`: GitOps application definition.
-- `deploy/registry`: in-cluster image registry.
-- `.gitlab-ci.yml`: Pipeline definition for GitLab.
+- `cmd/server`: HTTP server wiring
+- `internal/adapter/rest`: REST handlers
+- `internal/adapter/graphql`: GraphQL schema and resolvers
+- `internal/usecase/lcp`: publication and license logic
+- `internal/adapter/repository/lcp`: in-memory and PostgreSQL repositories
+- `frontend`: admin UI
+- `docs`: API, architecture, deployment, and operations docs
+- `deploy`: Kubernetes, K3s, monitoring, registry, and ArgoCD manifests
+- `examples`: sample books and LCP fixtures
 
-## ⚠️ Configuration Before Deployment
+## More docs
 
-Before deploying, you must replace the following placeholders:
-
-- `yourdomain.com` → Your actual domain
-- `your-registry.example.com` → Your container registry (e.g. `registry.gitlab.com/youruser` or `ghcr.io/yourusername`)
-
-Quick search & replace:
-
-```bash
-grep -rl "yourdomain.com" .
-grep -rl "your-registry.example.com" .
-```
-
-## Documentation
-
+- `docs/architecture.md`
 - `docs/deployment-guide.md`
+- `docs/PRODUCTION.md`
 - `docs/security-policy.md`
 - `docs/user-manual.md`
 - `docs/contract-matrix.md`
-- `docs/architecture.md`
 - `docs/openapi-rest.yaml`
-- Swagger/OpenAPI is also exposed at runtime on `/swagger.yaml` and `/swagger.json`.
-- `docs/acceptance-checklist.md`
-- `docs/support-and-knowledge-transfer.md`
-
-## Load Test
-
-```bash
-k6 run -e BASE_URL=http://localhost:8080 -e JWT="$JWT" tests/k6/lcp-status.js
-```
-
-# Pride and Prejudice — Demo Book
-
-**Public domain** ebook from [Project Gutenberg](https://www.gutenberg.org/ebooks/1342).
-
-## Quick Demo
-
-```bash
-# From project root
-cd examples/pride-and-prejudice
-../../examples/scripts/demo-setup.sh
-```
+- `docs/roadmap.md`

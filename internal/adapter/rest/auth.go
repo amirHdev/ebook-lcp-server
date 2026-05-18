@@ -16,6 +16,7 @@ type AuthHandler struct {
 	publisherUser string
 	publisherPass string
 	admin2FACode  string
+	tenantID      string
 }
 
 type LoginRequest struct {
@@ -31,7 +32,7 @@ type LoginResponse struct {
 	ExpiresAt time.Time `json:"expiresAt"`
 }
 
-func NewAuthHandler(secret, adminUser, adminPass, publisherUser, publisherPass, admin2FACode string) *AuthHandler {
+func NewAuthHandler(secret, adminUser, adminPass, publisherUser, publisherPass, admin2FACode, tenantID string) *AuthHandler {
 	return &AuthHandler{
 		secret:        strings.TrimSpace(secret),
 		adminUser:     strings.TrimSpace(adminUser),
@@ -39,6 +40,7 @@ func NewAuthHandler(secret, adminUser, adminPass, publisherUser, publisherPass, 
 		publisherUser: strings.TrimSpace(publisherUser),
 		publisherPass: strings.TrimSpace(publisherPass),
 		admin2FACode:  strings.TrimSpace(admin2FACode),
+		tenantID:      strings.TrimSpace(tenantID),
 	}
 }
 
@@ -76,10 +78,11 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	claims := auth.Claims{
-		Subject: req.Username,
-		Role:    role,
-		Roles:   []string{role},
-		Exp:     time.Now().Add(7 * 24 * time.Hour).Unix(),
+		Subject:  req.Username,
+		TenantID: h.tenantID,
+		Role:     role,
+		Roles:    []string{role},
+		Exp:      time.Now().Add(7 * 24 * time.Hour).Unix(),
 	}
 	token, err := auth.IssueBearerToken(h.secret, claims)
 	if err != nil {

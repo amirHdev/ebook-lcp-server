@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/amirhdev/ebook-lcp-server/internal/ratelimit"
 )
 
 type contextKey string
@@ -24,10 +26,11 @@ var (
 )
 
 type Claims struct {
-	Subject string   `json:"sub"`
-	Role    string   `json:"role"`
-	Roles   []string `json:"roles,omitempty"`
-	Exp     int64    `json:"exp,omitempty"`
+	Subject  string   `json:"sub"`
+	TenantID string   `json:"tenantId,omitempty"`
+	Role     string   `json:"role"`
+	Roles    []string `json:"roles,omitempty"`
+	Exp      int64    `json:"exp,omitempty"`
 }
 
 func FromContext(ctx context.Context) (*Claims, bool) {
@@ -42,10 +45,11 @@ func WithClaims(ctx context.Context, claims *Claims) context.Context {
 type Middleware struct {
 	secret       string
 	admin2FACode string
+	limiter      *ratelimit.Limiter
 }
 
-func New(secret, admin2FACode string) *Middleware {
-	return &Middleware{secret: strings.TrimSpace(secret), admin2FACode: strings.TrimSpace(admin2FACode)}
+func New(secret, admin2FACode string, limiter *ratelimit.Limiter) *Middleware {
+	return &Middleware{secret: strings.TrimSpace(secret), admin2FACode: strings.TrimSpace(admin2FACode), limiter: limiter}
 }
 
 func (m *Middleware) RequireRole(roles ...string) func(http.Handler) http.Handler {
@@ -69,9 +73,20 @@ func (m *Middleware) RequireRole(roles ...string) func(http.Handler) http.Handle
 				writeAuthError(w, http.StatusForbidden, errors.New("invalid admin 2fa code"))
 				return
 			}
+			if !m.limiter.Allow(rateLimitKey(r, claims)) {
+				writeAuthError(w, http.StatusTooManyRequests, errors.New("rate limit exceeded"))
+				return
+			}
 			next.ServeHTTP(w, r.WithContext(WithClaims(r.Context(), claims)))
 		})
 	}
+}
+
+func rateLimitKey(r *http.Request, claims *Claims) string {
+	if claims != nil && claims.Subject != "" {
+		return claims.Subject
+	}
+	return r.RemoteAddr
 }
 
 func (m *Middleware) Optional(next http.Handler) http.Handler {

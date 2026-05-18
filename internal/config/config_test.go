@@ -17,3 +17,13 @@ func TestLoadConfig(t *testing.T) {
 		t.Fatal("expected config")
 	}
 }
+
+func TestLoadConfigUsesDefaultSignedURLTTL(t *testing.T) {
+	cfg, err := LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig returned error: %v", err)
+	}
+	if cfg.LCP.Storage.S3.SignedURLTTLSecs != 900 {
+		t.Fatalf("unexpected signed url ttl: %d", cfg.LCP.Storage.S3.SignedURLTTLSecs)
+	}
+}

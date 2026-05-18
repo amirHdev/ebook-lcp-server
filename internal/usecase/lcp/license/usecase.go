@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	auditservice "github.com/amirhdev/ebook-lcp-server/internal/audit"
 	userdomain "github.com/amirhdev/ebook-lcp-server/internal/domain"
 	"github.com/amirhdev/ebook-lcp-server/internal/domain/lcp"
 	lcpencrypt "github.com/amirhdev/ebook-lcp-server/internal/lcp/encrypt"
 	lcplicense "github.com/amirhdev/ebook-lcp-server/internal/lcp/license"
 	"github.com/amirhdev/ebook-lcp-server/internal/pkg/id"
+	"github.com/amirhdev/ebook-lcp-server/internal/tenant"
+	"github.com/amirhdev/ebook-lcp-server/internal/webhook"
 )
 
 type LicenseUsecase interface {
@@ -31,10 +34,15 @@ type licenseUsecase struct {
 	enc     lcpencrypt.Encrypter
 	lcp     lcpService
 	baseURL string
+	hooks   webhook.Publisher
+	audit   auditservice.Recorder
 }
 
-func NewLicenseUsecase(repo lcp.LicenseRepository, pubs lcp.PublicationRepository, users userdomain.UserRepository, enc lcpencrypt.Encrypter, lcp *lcplicense.Service, baseURL string) LicenseUsecase {
-	return &licenseUsecase{repo: repo, pubs: pubs, users: users, enc: enc, lcp: lcp, baseURL: baseURL}
+func NewLicenseUsecase(repo lcp.LicenseRepository, pubs lcp.PublicationRepository, users userdomain.UserRepository, enc lcpencrypt.Encrypter, lcp *lcplicense.Service, baseURL string, hooks webhook.Publisher, audit auditservice.Recorder) LicenseUsecase {
+	if hooks == nil {
+		hooks = webhook.NopPublisher{}
+	}
+	return &licenseUsecase{repo: repo, pubs: pubs, users: users, enc: enc, lcp: lcp, baseURL: baseURL, hooks: hooks, audit: audit}
 }
 
 func (u *licenseUsecase) Create(ctx context.Context, input *lcp.LicenseInput) (*lcp.License, error) {
@@ -77,6 +85,7 @@ func (u *licenseUsecase) Create(ctx context.Context, input *lcp.LicenseInput) (*
 
 	license := &lcp.License{
 		ID:             id.New(),
+		TenantID:       tenant.IDFromContext(ctx),
 		PublicationID:  input.PublicationID,
 		UserID:         input.UserID,
 		Passphrase:     input.Passphrase,
@@ -111,21 +120,62 @@ func (u *licenseUsecase) Create(ctx context.Context, input *lcp.LicenseInput) (*
 	if err != nil {
 		return nil, err
 	}
+	_ = u.hooks.Publish(ctx, webhook.Event{
+		Type:      webhook.EventLicenseCreated,
+		CreatedAt: time.Now(),
+		Data: map[string]string{
+			"id":            license.ID,
+			"publicationID": license.PublicationID,
+			"userID":        license.UserID,
+		},
+	})
+	if u.audit != nil {
+		_ = u.audit.Record(ctx, "license.created", "license", license.ID)
+	}
 
 	return license, nil
 }
 
 func (u *licenseUsecase) GetByID(ctx context.Context, id string) (*lcp.License, error) {
-	return u.repo.FindByID(ctx, id)
+	lic, err := u.repo.FindByID(ctx, id)
+	if err != nil || lic == nil {
+		return lic, err
+	}
+	if lic.TenantID != "" && lic.TenantID != tenant.IDFromContext(ctx) {
+		return nil, nil
+	}
+	return lic, nil
 }
 
 func (u *licenseUsecase) GetByPublication(ctx context.Context, publicationID *string) ([]*lcp.License, error) {
-	return u.repo.FindByPublication(ctx, publicationID)
+	licenses, err := u.repo.FindByPublication(ctx, publicationID)
+	if err != nil {
+		return nil, err
+	}
+	tenantID := tenant.IDFromContext(ctx)
+	filtered := make([]*lcp.License, 0, len(licenses))
+	for _, lic := range licenses {
+		if lic.TenantID == "" || lic.TenantID == tenantID {
+			filtered = append(filtered, lic)
+		}
+	}
+	return filtered, nil
 }
 
 func (u *licenseUsecase) Revoke(ctx context.Context, id string) error {
 	if err := u.lcp.RevokeLicense(ctx, id); err != nil {
 		return err
 	}
-	return u.repo.Delete(ctx, id)
+	if err := u.repo.Delete(ctx, id); err != nil {
+		return err
+	}
+	_ = u.hooks.Publish(ctx, webhook.Event{
+		Type:      webhook.EventLicenseRevoked,
+		CreatedAt: time.Now(),
+		Data:      map[string]string{"id": id},
+	})
+	if u.audit != nil {
+		_ = u.audit.Record(ctx, "license.revoked", "license", id)
+	}
+	return nil
 }

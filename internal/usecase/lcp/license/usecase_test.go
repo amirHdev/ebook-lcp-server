@@ -5,8 +5,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/amirhdev/ebook-lcp-server/internal/auth"
 	userdomain "github.com/amirhdev/ebook-lcp-server/internal/domain"
 	domain "github.com/amirhdev/ebook-lcp-server/internal/domain/lcp"
+	"github.com/amirhdev/ebook-lcp-server/internal/webhook"
 )
 
 type fakeLicenseRepo struct {
@@ -111,6 +113,15 @@ type fakeLCPService struct {
 	revoked   string
 }
 
+type fakeWebhookPublisher struct {
+	events []webhook.Event
+}
+
+func (p *fakeWebhookPublisher) Publish(_ context.Context, event webhook.Event) error {
+	p.events = append(p.events, event)
+	return nil
+}
+
 func (s *fakeLCPService) GenerateLicense(_ context.Context, lic *domain.License) error {
 	s.generated = lic
 	lic.LCPL = "fake-lcpl"
@@ -137,6 +148,7 @@ func TestCreateGeneratesAndSavesLicense(t *testing.T) {
 		},
 	}
 	lcpSvc := &fakeLCPService{}
+	hooks := &fakeWebhookPublisher{}
 
 	uc := &licenseUsecase{
 		repo:    licenseRepo,
@@ -144,6 +156,7 @@ func TestCreateGeneratesAndSavesLicense(t *testing.T) {
 		users:   &fakeUserRepo{},
 		lcp:     lcpSvc,
 		baseURL: "http://localhost",
+		hooks:   hooks,
 	}
 
 	lic, err := uc.Create(context.Background(), &domain.LicenseInput{
@@ -173,6 +186,9 @@ func TestCreateGeneratesAndSavesLicense(t *testing.T) {
 	if lcpSvc.generated == nil {
 		t.Fatal("expected LCP service to generate license")
 	}
+	if len(hooks.events) != 1 || hooks.events[0].Type != webhook.EventLicenseCreated {
+		t.Fatal("expected license.created webhook")
+	}
 }
 
 func TestRevokeRevokesAndDeletesLicense(t *testing.T) {
@@ -180,10 +196,12 @@ func TestRevokeRevokesAndDeletesLicense(t *testing.T) {
 		saved: &domain.License{ID: "lic1"},
 	}
 	lcpSvc := &fakeLCPService{}
+	hooks := &fakeWebhookPublisher{}
 
 	uc := &licenseUsecase{
-		repo: repo,
-		lcp:  lcpSvc,
+		repo:  repo,
+		lcp:   lcpSvc,
+		hooks: hooks,
 	}
 
 	err := uc.Revoke(context.Background(), "lic1")
@@ -196,5 +214,24 @@ func TestRevokeRevokesAndDeletesLicense(t *testing.T) {
 	}
 	if repo.saved != nil {
 		t.Fatal("expected license to be deleted")
+	}
+	if len(hooks.events) != 1 || hooks.events[0].Type != webhook.EventLicenseRevoked {
+		t.Fatal("expected license.revoked webhook")
+	}
+}
+
+func TestGetByIDHidesOtherTenant(t *testing.T) {
+	repo := &fakeLicenseRepo{
+		saved: &domain.License{ID: "lic1", TenantID: "tenant-b"},
+	}
+	uc := &licenseUsecase{repo: repo}
+	ctx := auth.WithClaims(context.Background(), &auth.Claims{TenantID: "tenant-a"})
+
+	lic, err := uc.GetByID(ctx, "lic1")
+	if err != nil {
+		t.Fatalf("GetByID failed: %v", err)
+	}
+	if lic != nil {
+		t.Fatal("expected license from another tenant to be hidden")
 	}
 }

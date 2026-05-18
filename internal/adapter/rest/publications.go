@@ -12,6 +12,7 @@ import (
 	"github.com/amirhdev/ebook-lcp-server/internal/auth"
 	"github.com/amirhdev/ebook-lcp-server/internal/domain/lcp"
 	"github.com/amirhdev/ebook-lcp-server/internal/pkg/id"
+	"github.com/amirhdev/ebook-lcp-server/internal/tenant"
 	usecasePublication "github.com/amirhdev/ebook-lcp-server/internal/usecase/lcp/publication"
 )
 
@@ -112,7 +113,14 @@ func (h *PublicationHandler) list(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"publications": pubs})
+	tenantID := tenant.IDFromContext(r.Context())
+	filtered := make([]*lcp.Publication, 0, len(pubs))
+	for _, pub := range pubs {
+		if pub.TenantID == "" || pub.TenantID == tenantID {
+			filtered = append(filtered, pub)
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"publications": filtered})
 }
 
 func (h *PublicationHandler) get(w http.ResponseWriter, r *http.Request, id string) {
@@ -122,6 +130,10 @@ func (h *PublicationHandler) get(w http.ResponseWriter, r *http.Request, id stri
 		return
 	}
 	if pub == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "publication not found"})
+		return
+	}
+	if pub.TenantID != "" && pub.TenantID != tenant.IDFromContext(r.Context()) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "publication not found"})
 		return
 	}
@@ -144,6 +156,7 @@ func (h *PublicationHandler) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pub := &lcp.Publication{
+		TenantID:            tenant.IDFromContext(r.Context()),
 		Title:               req.Title,
 		Authors:             req.Authors,
 		Language:            req.Language,

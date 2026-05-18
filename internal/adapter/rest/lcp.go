@@ -2,6 +2,7 @@ package rest
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -18,6 +19,7 @@ type Handler struct {
 	publicationRepo lcp.PublicationRepository
 	publications    usecasePublication.PublicationUsecase
 	startedAt       time.Time
+	readyCheck      func(context.Context) error
 
 	mu        sync.RWMutex
 	processes map[string]*ProcessStatus
@@ -45,11 +47,12 @@ type Metrics struct {
 	ProcessesFail int64 `json:"processesFail"`
 }
 
-func NewHandler(repo lcp.PublicationRepository, publications usecasePublication.PublicationUsecase) *Handler {
+func NewHandler(repo lcp.PublicationRepository, publications usecasePublication.PublicationUsecase, readyCheck func(context.Context) error) *Handler {
 	return &Handler{
 		publicationRepo: repo,
 		publications:    publications,
 		startedAt:       time.Now(),
+		readyCheck:      readyCheck,
 		processes:       map[string]*ProcessStatus{},
 	}
 }
@@ -185,6 +188,12 @@ func (h *Handler) Healthz(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (h *Handler) Readyz(w http.ResponseWriter, r *http.Request) {
+	if h.readyCheck != nil {
+		if err := h.readyCheck(r.Context()); err != nil {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"status": "not ready"})
+			return
+		}
+	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ready"})
 }
 

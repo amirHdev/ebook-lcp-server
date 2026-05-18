@@ -3,21 +3,28 @@ package main
 import (
 	"context"
 	"database/sql"
+	"io"
 	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/amirhdev/ebook-lcp-server/internal/adapter/graphql"
+	auditrepo "github.com/amirhdev/ebook-lcp-server/internal/adapter/repository/audit"
 	"github.com/amirhdev/ebook-lcp-server/internal/adapter/repository/lcp"
 	"github.com/amirhdev/ebook-lcp-server/internal/adapter/rest"
+	auditservice "github.com/amirhdev/ebook-lcp-server/internal/audit"
 	"github.com/amirhdev/ebook-lcp-server/internal/auth"
 	"github.com/amirhdev/ebook-lcp-server/internal/config"
 	userdomain "github.com/amirhdev/ebook-lcp-server/internal/domain"
 	lcpencrypt "github.com/amirhdev/ebook-lcp-server/internal/lcp/encrypt"
 	lcplicense "github.com/amirhdev/ebook-lcp-server/internal/lcp/license"
+	"github.com/amirhdev/ebook-lcp-server/internal/ratelimit"
+	publicationstorage "github.com/amirhdev/ebook-lcp-server/internal/storage"
 	"github.com/amirhdev/ebook-lcp-server/internal/usecase/lcp/license"
 	"github.com/amirhdev/ebook-lcp-server/internal/usecase/lcp/publication"
+	"github.com/amirhdev/ebook-lcp-server/internal/webhook"
 )
 
 // @title LCP License Server API
@@ -66,15 +73,26 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	pubUsecase := publication.NewPublicationUsecase(pubRepo, lcpEnc)
+	auditRepo, err := buildAuditRepository(cfg)
+	if err != nil {
+		panic(err)
+	}
+	publicationStorage, err := buildPublicationStorage(cfg)
+	if err != nil {
+		panic(err)
+	}
+	webhookPublisher := webhook.NewHTTPPublisher(cfg.Webhooks.URLs, cfg.Webhooks.Secret)
+	auditSvc := auditservice.NewService(auditRepo)
+	pubUsecase := publication.NewPublicationUsecase(pubRepo, lcpEnc, publicationStorage, webhookPublisher, auditSvc)
 	publicBaseURL := buildBaseURL(cfg)
-	licUsecase := license.NewLicenseUsecase(licRepo, pubRepo, buildUserRepository(cfg, db), lcpEnc, lcpSrv, publicBaseURL)
-	authn := auth.New(cfg.JWT.Secret, cfg.JWT.Admin2FACode)
-	restHandler := rest.NewHandler(pubRepo, pubUsecase)
-	authHandler := rest.NewAuthHandler(cfg.JWT.Secret, cfg.Admin.Username, cfg.Admin.Password, cfg.Publisher.Username, cfg.Publisher.Password, cfg.JWT.Admin2FACode)
+	licUsecase := license.NewLicenseUsecase(licRepo, pubRepo, buildUserRepository(cfg, db), lcpEnc, lcpSrv, publicBaseURL, webhookPublisher, auditSvc)
+	authn := auth.New(cfg.JWT.Secret, cfg.JWT.Admin2FACode, ratelimit.New(cfg.Server.RateLimitRPM, time.Minute))
+	restHandler := rest.NewHandler(pubRepo, pubUsecase, buildReadyCheck(db))
+	authHandler := rest.NewAuthHandler(cfg.JWT.Secret, cfg.Admin.Username, cfg.Admin.Password, cfg.Publisher.Username, cfg.Publisher.Password, cfg.JWT.Admin2FACode, cfg.Tenant.DefaultID)
 	publicationHandler := rest.NewPublicationHandler(pubRepo, pubUsecase)
 	userStore := rest.NewAdminUserStore(cfg.DataDir)
 	adminUsersHandler := rest.NewAdminUsersHandler(userStore)
+	auditHandler := rest.NewAuditHandler(auditRepo)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/auth/login", authHandler.Login)
@@ -114,6 +132,7 @@ func main() {
 	mux.Handle("/api/v1/admin/metrics", authn.RequireRole("admin")(http.HandlerFunc(restHandler.Metrics)))
 	mux.Handle("/api/v1/admin/users", authn.RequireRole("admin")(adminUsersHandler))
 	mux.Handle("/api/v1/admin/users/", authn.RequireRole("admin")(adminUsersHandler))
+	mux.Handle("/api/v1/admin/audit", authn.RequireRole("admin")(auditHandler))
 
 	gqlHandler := graphql.NewHandler(&graphql.Resolver{
 		PublicationUsecase: pubUsecase,
@@ -121,7 +140,7 @@ func main() {
 		PublicBaseURL:      publicBaseURL,
 	})
 	mux.Handle("/graphql", authn.RequireRole("admin", "publisher", "user")(gqlHandler))
-	mux.Handle("/publications/", publicationDownloadHandler(pubUsecase))
+	mux.Handle("/publications/", publicationDownloadHandler(pubUsecase, publicationStorage, cfg))
 
 	port := cfg.Server.Port
 	if port == "" {
@@ -161,11 +180,34 @@ func buildLicenseRepository(cfg *config.Config, db *sql.DB) (lcp.LicenseReposito
 	return lcp.NewPersistentLicenseRepository(filepath.Join(cfg.DataDir, "licenses.json"))
 }
 
+func buildAuditRepository(cfg *config.Config) (auditrepo.Repository, error) {
+	if cfg.DataDir == "" {
+		return auditrepo.NewRepository(), nil
+	}
+	return auditrepo.NewPersistentRepository(filepath.Join(cfg.DataDir, "audit.json"))
+}
+
 func buildUserRepository(cfg *config.Config, db *sql.DB) userdomain.UserRepository {
 	if db != nil {
 		return lcp.NewPostgresUserRepository(db)
 	}
 	return nil
+}
+
+func buildPublicationStorage(cfg *config.Config) (publicationstorage.PublicationStorage, error) {
+	if strings.EqualFold(strings.TrimSpace(cfg.LCP.Storage.Mode), "s3") {
+		return publicationstorage.NewS3PublicationStorage(cfg)
+	}
+	return publicationstorage.NewFilesystemPublicationStorage(), nil
+}
+
+func buildReadyCheck(db *sql.DB) func(context.Context) error {
+	if db == nil {
+		return nil
+	}
+	return func(ctx context.Context) error {
+		return db.PingContext(ctx)
+	}
 }
 
 func buildBaseURL(cfg *config.Config) string {
@@ -196,7 +238,7 @@ func buildStatusBaseURL(cfg *config.Config) string {
 	return ""
 }
 
-func publicationDownloadHandler(pubUsecase publication.PublicationUsecase) http.Handler {
+func publicationDownloadHandler(pubUsecase publication.PublicationUsecase, store publicationstorage.PublicationStorage, cfg *config.Config) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -219,11 +261,32 @@ func publicationDownloadHandler(pubUsecase publication.PublicationUsecase) http.
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		if pub == nil || pub.EncryptedPath == "" {
+		if pub == nil || pub.EncryptedURI == "" {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-
-		http.ServeFile(w, r, pub.EncryptedPath)
+		if strings.HasPrefix(pub.EncryptedURI, "s3://") {
+			expiry := time.Duration(cfg.LCP.Storage.S3.SignedURLTTLSecs) * time.Second
+			if signedURL, ok, err := store.SignedURL(r.Context(), pub.EncryptedURI, expiry); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			} else if ok {
+				http.Redirect(w, r, signedURL, http.StatusTemporaryRedirect)
+				return
+			}
+			reader, err := store.OpenEncrypted(r.Context(), pub.EncryptedURI)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			defer func() {
+				if err := reader.Close(); err != nil {
+					log.Printf("close encrypted object: %v", err)
+				}
+			}()
+			_, _ = io.Copy(w, reader)
+			return
+		}
+		http.ServeFile(w, r, pub.EncryptedURI)
 	})
 }

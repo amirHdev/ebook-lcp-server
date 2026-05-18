@@ -5,6 +5,7 @@ import "time"
 // Publication represents an encrypted book stored by the service.
 type Publication struct {
 	ID                  string    `db:"id" json:"id"`
+	TenantID            string    `db:"tenant_id" json:"tenantId,omitempty"`
 	Title               string    `db:"title" json:"title"`
 	Authors             []string  `db:"authors" json:"authors,omitempty"`
 	Language            string    `db:"language" json:"language,omitempty"`

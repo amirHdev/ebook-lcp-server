@@ -48,7 +48,7 @@ func (fakePublicationRepo) FindByID(ctx context.Context, id string) (*lcp.Public
 }
 
 func TestProcessCreatesPublication(t *testing.T) {
-	handler := NewHandler(fakePublicationRepo{}, fakePublicationUsecase{})
+	handler := NewHandler(fakePublicationRepo{}, fakePublicationUsecase{}, nil)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/lcp/process", strings.NewReader(`{"title":"Book","file":"aGVsbG8="}`))
 	rec := httptest.NewRecorder()
 
@@ -67,13 +67,27 @@ func TestProcessCreatesPublication(t *testing.T) {
 }
 
 func TestProcessRejectsInvalidPayload(t *testing.T) {
-	handler := NewHandler(fakePublicationRepo{}, fakePublicationUsecase{})
+	handler := NewHandler(fakePublicationRepo{}, fakePublicationUsecase{}, nil)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/lcp/process", strings.NewReader(`{"file":"aGVsbG8="}`))
 	rec := httptest.NewRecorder()
 
 	handler.Process(rec, req)
 
 	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("unexpected status %d", rec.Code)
+	}
+}
+
+func TestReadyzFailsWhenDependencyCheckFails(t *testing.T) {
+	handler := NewHandler(fakePublicationRepo{}, fakePublicationUsecase{}, func(context.Context) error {
+		return context.DeadlineExceeded
+	})
+	req := httptest.NewRequest(http.MethodGet, "/readyz", nil)
+	rec := httptest.NewRecorder()
+
+	handler.Readyz(rec, req)
+
+	if rec.Code != http.StatusServiceUnavailable {
 		t.Fatalf("unexpected status %d", rec.Code)
 	}
 }
