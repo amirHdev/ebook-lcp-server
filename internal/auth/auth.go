@@ -35,8 +35,10 @@ type Claims struct {
 	Exp      int64    `json:"exp,omitempty"`
 }
 
-type APIKeyResolver func(key string) (*Claims, bool)
-type RateLimitResolver func(tenantID string) int
+type (
+	APIKeyResolver    func(key string) (*Claims, bool)
+	RateLimitResolver func(tenantID string) int
+)
 
 func FromContext(ctx context.Context) (*Claims, bool) {
 	claims, ok := ctx.Value(claimsContextKey).(*Claims)

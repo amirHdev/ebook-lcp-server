@@ -33,7 +33,8 @@ func Middleware(logger *slog.Logger) func(http.Handler) http.Handler {
 			rec.Header().Set("X-Request-ID", requestID)
 			ctx := context.WithValue(r.Context(), requestIDKey, requestID)
 			next.ServeHTTP(rec, r.WithContext(ctx))
-			logger.Info("http_request",
+			logger.Info(
+				"http_request",
 				"request_id", requestID,
 				"method", r.Method,
 				"path", r.URL.Path,

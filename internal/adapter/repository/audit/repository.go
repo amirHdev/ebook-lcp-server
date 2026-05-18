@@ -10,6 +10,8 @@ import (
 	domain "github.com/amirhdev/ebook-lcp-server/internal/domain"
 )
 
+const maxAuditEntriesLimit = 100
+
 type Repository interface {
 	Save(ctx context.Context, entry *domain.AuditEntry) error
 	FindRecent(ctx context.Context, limit int) ([]*domain.AuditEntry, error)
@@ -57,12 +59,18 @@ func (r *repository) FindRecent(_ context.Context, limit int) ([]*domain.AuditEn
 func (r *repository) FindRecentByTenant(_ context.Context, tenantID string, limit int) ([]*domain.AuditEntry, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
+
+	if limit <= 0 || limit > maxAuditEntriesLimit {
+		limit = maxAuditEntriesLimit
+	}
+
 	result := make([]*domain.AuditEntry, 0, limit)
-	for i := len(r.entries) - 1; i >= 0 && (limit <= 0 || len(result) < limit); i-- {
+	for i := len(r.entries) - 1; i >= 0 && len(result) < limit; i-- {
 		if r.entries[i].TenantID == tenantID {
 			result = append(result, r.entries[i])
 		}
 	}
+
 	return result, nil
 }
 
