@@ -46,13 +46,14 @@ func (r *repository) Save(_ context.Context, entry *domain.AuditEntry) error {
 func (r *repository) FindRecent(_ context.Context, limit int) ([]*domain.AuditEntry, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	if limit <= 0 || limit > len(r.entries) {
-		limit = len(r.entries)
-	}
-	result := make([]*domain.AuditEntry, 0, limit)
-	for i := len(r.entries) - 1; i >= 0 && len(result) < limit; i-- {
+
+	effectiveLimit := sanitizeAuditLimit(limit)
+
+	result := make([]*domain.AuditEntry, 0)
+	for i := len(r.entries) - 1; i >= 0 && len(result) < effectiveLimit; i-- {
 		result = append(result, r.entries[i])
 	}
+
 	return result, nil
 }
 
@@ -60,12 +61,10 @@ func (r *repository) FindRecentByTenant(_ context.Context, tenantID string, limi
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	if limit <= 0 || limit > maxAuditEntriesLimit {
-		limit = maxAuditEntriesLimit
-	}
+	effectiveLimit := sanitizeAuditLimit(limit)
 
-	result := make([]*domain.AuditEntry, 0, limit)
-	for i := len(r.entries) - 1; i >= 0 && len(result) < limit; i-- {
+	result := make([]*domain.AuditEntry, 0)
+	for i := len(r.entries) - 1; i >= 0 && len(result) < effectiveLimit; i-- {
 		if r.entries[i].TenantID == tenantID {
 			result = append(result, r.entries[i])
 		}
@@ -100,4 +99,11 @@ func (r *repository) persistLocked() error {
 		return err
 	}
 	return os.WriteFile(r.path, data, 0o600)
+}
+
+func sanitizeAuditLimit(limit int) int {
+	if limit <= 0 || limit > maxAuditEntriesLimit {
+		return maxAuditEntriesLimit
+	}
+	return limit
 }
