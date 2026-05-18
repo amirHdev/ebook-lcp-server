@@ -1,4 +1,9 @@
 # Open-source Readium LCP server in Go
+[![CI](https://github.com/amirHdev/ebook-lcp-server/actions/workflows/go.yml/badge.svg)](https://github.com/amirHdev/ebook-lcp-server/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/amirHdev/ebook-lcp-server/actions/workflows/codeql.yml/badge.svg)](https://github.com/amirHdev/ebook-lcp-server/actions/workflows/codeql.yml)
+[![Release](https://img.shields.io/github/v/release/amirHdev/ebook-lcp-server)](https://github.com/amirHdev/ebook-lcp-server/releases)
+[![License](https://img.shields.io/github/license/amirHdev/ebook-lcp-server)](https://github.com/amirHdev/ebook-lcp-server/blob/main/LICENSE)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io-blue?logo=docker)](https://github.com/amirHdev/ebook-lcp-server/pkgs/container/ebook-lcp-server)
 
 Protect EPUB and PDF files with Readium LCP DRM.
 
