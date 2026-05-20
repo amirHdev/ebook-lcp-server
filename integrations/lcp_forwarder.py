@@ -5,12 +5,32 @@ from __future__ import annotations
 
 import argparse
 import base64
+import dataclasses
 import json
 import os
 import pathlib
 import sys
 import urllib.error
 import urllib.request
+
+SUPPORTED_SUFFIXES = {".epub", ".pdf"}
+
+
+@dataclasses.dataclass(frozen=True)
+class LCPConfig:
+    base_url: str = "http://localhost:8080"
+    username: str = "publisher"
+    password: str = "publisher"
+    two_factor: str = ""
+
+    @classmethod
+    def from_env(cls) -> "LCPConfig":
+        return cls(
+            base_url=os.getenv("LCP_BASE_URL", cls.base_url).rstrip("/"),
+            username=os.getenv("LCP_USERNAME", cls.username),
+            password=os.getenv("LCP_PASSWORD", cls.password),
+            two_factor=os.getenv("LCP_2FA_CODE", cls.two_factor),
+        )
 
 
 def request_json(url: str, payload: dict, token: str | None = None) -> dict:
@@ -52,20 +72,27 @@ def upload(base_url: str, token: str, path: pathlib.Path, title: str) -> dict:
         raise SystemExit(result["errors"][0]["message"])
     return result["data"]["uploadPublication"]
 
+def forward_file(path: pathlib.Path, title: str | None, config: LCPConfig) -> dict:
+    if not path.is_file():
+        raise SystemExit(f"file not found: {path}")
+    if path.suffix.lower() not in SUPPORTED_SUFFIXES:
+        raise SystemExit(f"unsupported file type: {path.suffix}")
+    token = login(config.base_url.rstrip("/"), config.username, config.password, config.two_factor)
+    return upload(config.base_url.rstrip("/"), token, path, title or path.stem)
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("path", type=pathlib.Path, help="EPUB or PDF file to forward")
     parser.add_argument("--title", help="Catalog title override")
-    parser.add_argument("--base-url", default=os.getenv("LCP_BASE_URL", "http://localhost:8080"))
-    parser.add_argument("--username", default=os.getenv("LCP_USERNAME", "publisher"))
-    parser.add_argument("--password", default=os.getenv("LCP_PASSWORD", "publisher"))
-    parser.add_argument("--two-factor", default=os.getenv("LCP_2FA_CODE", ""))
+    env_config = LCPConfig.from_env()
+    parser.add_argument("--base-url", default=env_config.base_url)
+    parser.add_argument("--username", default=env_config.username)
+    parser.add_argument("--password", default=env_config.password)
+    parser.add_argument("--two-factor", default=env_config.two_factor)
     args = parser.parse_args()
-    if not args.path.is_file():
-        raise SystemExit(f"file not found: {args.path}")
-    token = login(args.base_url.rstrip("/"), args.username, args.password, args.two_factor)
-    print(json.dumps(upload(args.base_url.rstrip("/"), token, args.path, args.title or args.path.stem)))
+    config = LCPConfig(args.base_url.rstrip("/"), args.username, args.password, args.two_factor)
+    print(json.dumps(forward_file(args.path, args.title, config)))
     return 0
 
 

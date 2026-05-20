@@ -7,7 +7,7 @@ The core server work is in place now: local Compose stack, Readium sidecars, Pos
 | Priority | Item | Status | Why it matters |
 | --- | --- | --- | --- |
 | P0 | Complete one clean frontend dependency install and production build verification | Done | Confirmed with `npm ci` and `npm run build` on May 18, 2026. |
-| P1 | Build native integrations for Calibre, calibre-web, and Kavita | Next | Converts the generic forwarder into installable workflows for the largest self-hosted library audiences. |
+| P1 | Build native integrations for Calibre, calibre-web, and Kavita | Done | Adds a Calibre plugin package, a single-file forwarder, and a polling sidecar for calibre-web/Kavita library folders. |
 | P2 | Expand the admin dashboard into a fuller operations console | Planned | Adds the day-to-day controls operators expect: license search, filters, active/expired loan views, audit visibility, and clearer states. |
 | P3 | Add a small operator CLI for common tasks | Planned | Gives self-hosters a fast terminal path for upload, license creation, revocation, health checks, and smoke tests. |
 | P4 | Prepare the final certification packet and run official EDRLab validation | External | Turns the current blueprint into commercial proof once production certificates and official EDRLab testing are available. |

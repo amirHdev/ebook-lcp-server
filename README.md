@@ -50,7 +50,7 @@ The project is centered on the normal LCP workflow: ingest a book, protect it, c
 - Per-tenant publication and license scoping
 - Docker, Kubernetes, K3s, ArgoCD, Prometheus, and Grafana files
 - Public-domain EPUB example under `examples/pride-and-prejudice`
-- Dependency-free import bridge for Calibre, calibre-web, and Kavita-style workflows
+- Native-style integrations for Calibre, calibre-web, and Kavita-style workflows
 
 It is still moving, but the main pieces are here already.
 
@@ -95,7 +95,7 @@ sh scripts/demo-local.sh
 
 It uploads the sample EPUB, creates a license, and prints the publication ID, license ID, and license URL.
 
-For import automation, see `docs/integrations.md` and `integrations/lcp_forwarder.py`.
+For import automation, see `docs/integrations.md`, `integrations/lcp_forwarder.py`, `integrations/lcp_library_watcher.py`, and the Calibre plugin source under `integrations/calibre_plugin`.
 
 ## API examples
 
