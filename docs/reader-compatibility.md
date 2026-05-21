@@ -5,8 +5,8 @@ This project emits Readium LCP licenses and protected publications. The server s
 | Reader | Status | Notes |
 | --- | --- | --- |
 | Thorium Reader | Verified | Local end-to-end flow tested with a generated `.lcpl`, signed download URL, and passphrase unlock. |
-| Readium Swift Toolkit | Planned | The server follows the Readium LCP flow, but a checked example app and written demo are still needed. |
-| Readium Kotlin Toolkit / Android | Planned | The server follows the Readium LCP flow, but an Android demo and verification notes are still needed. |
+| Readium Swift Toolkit | Demo kit ready | The repo now exports a repeatable `.lcpl`, status document, and metadata bundle for a Readium Swift import flow. Final simulator or device validation still depends on the local app setup. |
+| Readium Kotlin Toolkit / Android | Demo kit ready | The repo now exports a repeatable `.lcpl`, status document, and metadata bundle for an Android import flow. Final emulator or device validation still depends on the local app setup. |
 
 ## Thorium Reader
 
@@ -21,16 +21,20 @@ The local Compose setup uses `127.0.0.1` in generated public links because Thori
 
 ## Readium Swift
 
-Planned work:
+Use the shared export script to generate a fresh import bundle:
 
-- add a small iOS example flow
-- document how to fetch the `.lcpl`
-- verify download, fulfillment, and open behavior against the current API
+```bash
+sh scripts/export-reader-demo.sh swift /private/tmp/lcp-reader-demo-swift
+```
+
+Then follow [examples/readium-swift/README.md](/Users/mehrbod/projects/golang/lcp/examples/readium-swift/README.md) for the import and verification flow.
 
 ## Android
 
-Planned work:
+Use the shared export script to generate a fresh import bundle:
 
-- add a small Android example flow
-- document `.lcpl` download and import
-- verify fulfillment and protected-book opening against the current API
+```bash
+sh scripts/export-reader-demo.sh android /private/tmp/lcp-reader-demo-android
+```
+
+Then follow [examples/readium-android/README.md](/Users/mehrbod/projects/golang/lcp/examples/readium-android/README.md) for the import and verification flow.

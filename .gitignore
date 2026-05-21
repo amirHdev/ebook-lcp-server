@@ -29,6 +29,8 @@ frontend/dist/
 .env
 *.sqlite
 *.db
+certification-report.json
+certification-packet/
 
 # Cache
 **/*wal

@@ -147,11 +147,11 @@ See `examples/pride-and-prejudice/README.md` for the demo notes.
 
 ## Reader compatibility
 
-The flow is based on Readium LCP and is intended for LCP-compatible readers such as Thorium Reader. See `docs/reader-compatibility.md` for the current compatibility matrix and the remaining demo work. Fixtures used while checking compatibility live under `examples/lcp-fixtures`.
+The flow is based on Readium LCP and is intended for LCP-compatible readers such as Thorium Reader. See `docs/reader-compatibility.md` for the current compatibility matrix and the reader demo workflows. Fixtures used while checking compatibility live under `examples/lcp-fixtures`, and repeatable Readium Swift / Android demo bundles can be generated with `scripts/export-reader-demo.sh`.
 
 ## Certification prep
 
-`docs/certification-blueprint.md` explains the evidence bundle to gather before an official EDRLab certification run. `scripts/certification-smoke.sh` emits a machine-readable local report from a running stack.
+`docs/certification-blueprint.md` explains the evidence bundle to gather before an official EDRLab certification run. `scripts/certification-smoke.sh` emits a machine-readable local report from a running stack, and `scripts/generate-certification-packet.sh` builds a fuller local packet with a sample license flow, LCPL artifact, status document, admin snapshots, and deployment config captures. `docs/certificate-swap-guide.md` covers the move from the bundled test certificate to a real production certificate.
 
 ## Compared with `readium/readium-lcp-server`
 
@@ -243,6 +243,63 @@ Run tests:
 
 ```bash
 go test ./...
+```
+
+## Operator CLI
+
+The repo now includes a small operator CLI under `cmd/lcpctl` for the most common self-hosting tasks.
+
+Health and readiness:
+
+```bash
+go run ./cmd/lcpctl health --base-url http://127.0.0.1:8080
+```
+
+Get a JWT:
+
+```bash
+go run ./cmd/lcpctl login \
+  --base-url http://127.0.0.1:8080 \
+  --username admin \
+  --password admin \
+  --two-factor 123456
+```
+
+Run the full upload-and-license smoke flow:
+
+```bash
+go run ./cmd/lcpctl demo \
+  --base-url http://127.0.0.1:8080 \
+  --username publisher \
+  --password publisher
+```
+
+Upload a publication directly:
+
+```bash
+go run ./cmd/lcpctl upload \
+  --base-url http://127.0.0.1:8080 \
+  --username publisher \
+  --password publisher \
+  --file examples/pride-and-prejudice/pride-and-prejudice.epub
+```
+
+Create or revoke a license:
+
+```bash
+go run ./cmd/lcpctl license create \
+  --base-url http://127.0.0.1:8080 \
+  --username publisher \
+  --password publisher \
+  --publication-id <publication-id>
+```
+
+```bash
+go run ./cmd/lcpctl license revoke \
+  --base-url http://127.0.0.1:8080 \
+  --username publisher \
+  --password publisher \
+  --id <license-id>
 ```
 
 ## Deployment

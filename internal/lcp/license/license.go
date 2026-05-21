@@ -195,6 +195,10 @@ func (s *Service) RevokeLicense(ctx context.Context, id string) error {
 	if resp.StatusCode != http.StatusOK &&
 		resp.StatusCode != http.StatusNoContent &&
 		resp.StatusCode != http.StatusPartialContent {
+		if resp.StatusCode == http.StatusNotFound {
+			log.Printf("status update endpoint not found for license %s at %s; keeping local revocation state", id, s.statusURL)
+			return nil
+		}
 		return fmt.Errorf("status server returned %s", resp.Status)
 	}
 
