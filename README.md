@@ -275,6 +275,11 @@ npm ci
 npm run dev
 ```
 
+The Vite dev server starts the admin UI on `http://localhost:5173`. Keep the Go API running on
+`http://localhost:8080`; the frontend sends API requests to that local backend during development.
+If the UI loads but data is missing, confirm both servers are running and that browser requests to
+`localhost:8080` are not blocked by CORS or a stale proxy setting.
+
 Run tests:
 
 ```bash
