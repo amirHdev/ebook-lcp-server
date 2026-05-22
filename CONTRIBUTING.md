@@ -27,8 +27,3 @@ cd frontend && npm ci && npm run build
 ```
 
 Before opening a pull request, include a short summary, verification notes, and docs updates when public APIs or deployment flows change.
-
-## Good first issues
-
-Maintainers can find beginner-friendly issue drafts in `docs/community/issues/`.
-If you open one on GitHub, add the `good first issue` and `help wanted` labels so new contributors can spot it quickly.
