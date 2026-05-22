@@ -25,6 +25,7 @@ jobs:
             --no-progress
             --root-dir .
             --exclude-path reports/coverage
+            --exclude 'https://github.com/amirHdev/ebook-lcp-server/compare/.*'
             './**/*.md'
             './**/*.html'
         env:
