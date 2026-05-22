@@ -35,6 +35,16 @@ Zero-setup quickstart:
 curl -sSL https://raw.githubusercontent.com/amirHdev/ebook-lcp-server/main/quickstart.sh | sh
 ```
 
+## Demo media
+
+![Demo tour](docs/media/demo-tour.gif)
+
+![Operations overview](docs/media/admin-overview.png)
+
+![Catalog and license lifecycle](docs/media/catalog-and-loans.png)
+
+![Load smoke benchmark](docs/media/load-benchmark.png)
+
 ## What is in the repo
 
 The project is centered on the normal LCP workflow: ingest a book, protect it, create licenses for readers, and expose enough API around that flow to run it as a service.
@@ -96,6 +106,26 @@ sh scripts/demo-local.sh
 It uploads the sample EPUB, creates a license, and prints the publication ID, license ID, and license URL.
 
 For import automation, see `docs/integrations.md`, `integrations/lcp_forwarder.py`, `integrations/lcp_library_watcher.py`, and the Calibre plugin source under `integrations/calibre_plugin`.
+
+## SDKs
+
+The repo now includes small reference SDKs for the current API surface:
+
+- TypeScript: `sdk/typescript`
+- Python: `sdk/python`
+
+TypeScript smoke test:
+
+```bash
+./frontend/node_modules/.bin/tsc -p sdk/typescript/tsconfig.json
+node sdk/typescript/dist/examples/smoke.js
+```
+
+Python smoke test:
+
+```bash
+PYTHONPATH=sdk/python python3 sdk/python/examples/smoke.py
+```
 
 ## API examples
 

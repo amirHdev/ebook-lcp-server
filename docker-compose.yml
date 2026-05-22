@@ -69,10 +69,11 @@ services:
 
   swagger-ui:
     image: swaggerapi/swagger-ui:v5.21.0
-    environment:
-      SWAGGER_JSON_URL: http://localhost:8080/docs/openapi.yaml
     ports:
       - "8081:8080"
+    volumes:
+      - ./docs/openapi-rest.yaml:/usr/share/nginx/html/openapi.yaml:ro
+      - ./deploy/compose/swagger-initializer.js:/usr/share/nginx/html/swagger-initializer.js:ro
 
   lcp-server:
     build: .

@@ -1,0 +1,15 @@
+{
+  "generatedAt": "2026-05-21T16:56:11.278Z",
+  "baseUrl": "http://127.0.0.1:8080",
+  "totalRequests": 120,
+  "concurrency": 12,
+  "ok": true,
+  "failures": 0,
+  "durationMs": 30.27,
+  "requestsPerSecond": 3964.41,
+  "latencyMs": {
+    "p50": 1.76,
+    "p95": 8.58,
+    "max": 9.83
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "loginRole": "admin",
+  "health": {
+    "status": "ok"
+  },
+  "ready": {
+    "status": "ready"
+  },
+  "publicationID": "4018fbec36d0bf8806f515241421ef1b",
+  "licenseID": "65bea1dc-ae41-4ce0-9682-d9b59481f603",
+  "lcplBytes": 3999,
+  "status": "ready",
+  "adminLicenseCount": 13
+}

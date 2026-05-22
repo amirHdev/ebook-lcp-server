@@ -1,0 +1,10 @@
+{
+  "name": "@amirhdev/lcp-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Small TypeScript client for the ebook-lcp-server API",
+  "scripts": {
+    "build": "../../frontend/node_modules/.bin/tsc -p tsconfig.json"
+  }
+}
