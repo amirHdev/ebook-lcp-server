@@ -275,6 +275,8 @@ npm ci
 npm run dev
 ```
 
+The frontend is served at `http://localhost:5173` and connects to the API at `http://localhost:8080` during local development.
+
 Run tests:
 
 ```bash
