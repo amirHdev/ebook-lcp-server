@@ -20,6 +20,7 @@ You can contribute by:
 Run the full local stack when you want API, storage, Readium services, and the admin UI together:
 
 ```bash
+cp .env.example .env
 docker compose up --build
 sh scripts/demo-local.sh
 ```
@@ -50,7 +51,8 @@ make coverage
 cd frontend && npm ci && npm run build
 ```
 
-If the frontend cannot reach the API, check that both ports are running locally and that any proxy or
-CORS changes still allow requests from `localhost:5173` to `localhost:8080`.
+For local demos, the placeholders in `.env.example` are enough to start. The values most contributors
+change first are auth (`JWT_SECRET`, admin credentials), storage (`LCP_STORAGE_MODE` and `LCP_S3_*`),
+and service URLs (`PUBLIC_BASE_URL`, `STATUS_BASE_URL`, `LCP_CORE_URL`).
 
-Include a short summary, verification notes, and docs updates when public APIs or deployment flows change.
+Before opening a pull request, include a short summary, verification notes, and docs updates when public APIs or deployment flows change.
