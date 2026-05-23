@@ -2,27 +2,45 @@
 
 ## Supported Versions
 
-This project is currently in active development. Security fixes are provided for the latest version available on the main branch.
+This project is actively maintained.
+
+Security updates are provided for the latest version on the `main` branch.
 
 | Version | Supported |
 | ------- | --------- |
-| latest / main | ✅ |
-| older commits or archived versions | ❌ |
+| main / latest | ✅ |
+| older versions | ❌ |
+
+---
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability, please do not open a public issue.
+Please do NOT report security vulnerabilities through public GitHub issues.
 
-Instead report it privately using GitHub Security Advisories if available or contact the maintainer directly through the contact information listed on the GitHub profile.
+Instead, report vulnerabilities privately via:
 
-When reporting a vulnerability, please include:
+- GitHub Security Advisories
+- Email: security@yourdomain.com
 
-- A clear description of the issue
-- Steps to reproduce it
-- The affected file, endpoint, command, or component
-- The possible impact
-- Any suggested fix, if you have one
+If you do not have a dedicated security email yet, use:
 
-I will review valid security reports as soon as possible. If the vulnerability is confirmed I will work on a fix and publish an update or patch.
+- m9.akhlaghpoor@gmail.com
 
-Please avoid publicly disclosing the vulnerability until it has been reviewed and fixed.
+Please include:
+
+- Description of the vulnerability
+- Steps to reproduce
+- Affected files/components
+- Potential impact
+- Suggested remediation if available
+
+---
+
+## Disclosure Policy
+
+- Initial response target: within 72 hours
+- Status updates will be provided during investigation
+- Confirmed vulnerabilities will be patched as quickly as possible
+- Public disclosure should wait until a fix is available
+
+We appreciate responsible disclosure and security research.

@@ -241,6 +241,15 @@ The main settings are:
 | `WEBHOOK_URLS` | Comma-separated webhook targets |
 | `WEBHOOK_SECRET` | Optional secret used to sign webhook payloads |
 
+For first-time local work, start by checking these groups:
+
+- Auth: `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_2FA_CODE`
+- Storage: `LCP_STORAGE_MODE`, `LCP_STORAGE_FS_DIR`, and the `LCP_S3_*` values if you use MinIO or S3
+- Service URLs: `PUBLIC_BASE_URL`, `STATUS_BASE_URL`, and `LCP_CORE_URL`
+
+The placeholder values in `.env.example` are safe to copy for a local demo, but replace secrets,
+provider URLs, certificates, and storage credentials before using a shared or production environment.
+
 Set `LCP_STORAGE_MODE=s3` to store encrypted publication files in S3-compatible storage such as MinIO. When S3 mode is enabled, `/publications/{id}/content` redirects to a short-lived signed URL instead of streaming the object through the API server. The default mode is still `fs`.
 
 The service also has a few integration features that are useful once more than one system is involved:
@@ -275,7 +284,10 @@ npm ci
 npm run dev
 ```
 
-The frontend is served at `http://localhost:5173` and connects to the API at `http://localhost:8080` during local development.
+The Vite dev server starts the admin UI on `http://localhost:5173`. Keep the Go API running on
+`http://localhost:8080`; the frontend sends API requests to that local backend during development.
+If the UI loads but data is missing, confirm both servers are running and that browser requests to
+`localhost:8080` are not blocked by CORS or a stale proxy setting.
 
 Run tests:
 
