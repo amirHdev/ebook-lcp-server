@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   release:
@@ -18,4 +19,4 @@ jobs:
         uses: googleapis/release-please-action@v4
         with:
           release-type: go
-          package-name: ebook-lcp-server
+          token: ${{ secrets.GITHUB_TOKEN }}
