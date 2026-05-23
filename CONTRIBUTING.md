@@ -20,6 +20,8 @@ You can contribute by:
 Run the full local stack when you want API, storage, Readium services, and the admin UI together:
 
 ```bash
+git clone https://github.com/amirHdev/ebook-lcp-server.git
+cd ebook-lcp-server
 cp .env.example .env
 docker compose up --build
 sh scripts/demo-local.sh
@@ -48,11 +50,27 @@ Before opening a pull request, run the checks that match the files you changed:
 make lint
 go test ./...
 make coverage
-cd frontend && npm ci && npm run build
 ```
 
-For local demos, the placeholders in `.env.example` are enough to start. The values most contributors
-change first are auth (`JWT_SECRET`, admin credentials), storage (`LCP_STORAGE_MODE` and `LCP_S3_*`),
-and service URLs (`PUBLIC_BASE_URL`, `STATUS_BASE_URL`, `LCP_CORE_URL`).
+## Frontend development
+
+The admin UI is a React + Vite + TypeScript app. To run it locally:
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+The frontend talks to the API at `http://localhost:8080` by default. Make sure the API is running (or use the full Compose stack to start everything together). The frontend is served at `http://localhost:5173`.
+
+To build the frontend:
+
+```bash
+cd frontend
+npm ci
+npm run build
+```
+
 
 Before opening a pull request, include a short summary, verification notes, and docs updates when public APIs or deployment flows change.
