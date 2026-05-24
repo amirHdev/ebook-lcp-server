@@ -39,3 +39,8 @@ certification-packet/
 # TLS material
 *.pem
 *.key
+
+# Python cache artifacts
+__pycache__/
+*.py[cod]
+*$py.class
