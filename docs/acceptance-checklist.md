@@ -13,7 +13,7 @@ Local automation:
 | `/api/v1/lcp/status` returns status for user and guest roles | Enforced by E2E Readiness |
 | `/api/v1/admin/metrics` rejects non-admin users with 403 | Enforced by E2E Readiness |
 | Admin metrics require `X-2FA-Code` when configured | Enforced by E2E Readiness |
-| License issuance registers in LSD, supports extension, and reaches revoked status | Enforced by E2E Readiness |
+| License issuance registers in LSD, supports extension, and maps revocation to LSD `cancelled` status | Enforced by E2E Readiness |
 | PostgreSQL migrations apply successfully | Evidenced by E2E Readiness artifacts |
 | Docker backend image builds | Enforced by E2E Readiness |
 | Docker frontend image builds | Enforced by E2E Readiness |

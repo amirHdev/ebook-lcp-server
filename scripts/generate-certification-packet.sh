@@ -73,7 +73,7 @@ curl -fsS -X POST "$base_url/api/v1/admin/licenses/$license_id/revoke" \
   > "$out_dir/responses/license-revocation.json"
 jq -e '.status == "revoked"' "$out_dir/responses/license-revocation.json" >/dev/null
 curl -fsS "$status_url" > "$out_dir/responses/license-status-revoked.json"
-jq -e '.status == "revoked"' "$out_dir/responses/license-status-revoked.json" >/dev/null
+jq -e '.status == "cancelled" and any(.events[]?; .type == "cancel")' "$out_dir/responses/license-status-revoked.json" >/dev/null
 sh scripts/certification-smoke.sh "$out_dir/certification-report.json" >/dev/null
 
 cert_subject=""
