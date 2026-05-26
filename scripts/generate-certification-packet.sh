@@ -53,8 +53,27 @@ if [ -z "$publication_id" ] || [ -z "$license_id" ] || [ -z "$license_url" ]; th
 fi
 
 curl -fsS "$license_url" > "$out_dir/responses/license.lcpl"
-curl -fsS "$base_url/licenses/$license_id/status" > "$out_dir/responses/license-status.json"
+status_url="$(jq -er '.links[] | select(.rel == "status") | .href' "$out_dir/responses/license.lcpl")"
+curl -fsS "$status_url" > "$out_dir/responses/license-status.json"
+jq -e '.status == "ready"' "$out_dir/responses/license-status.json" >/dev/null
 curl -fsSL "$base_url/publications/$publication_id/content" -H "Authorization: Bearer $admin_token" -o "$out_dir/responses/publication-content.bin"
+
+extension_end_date="$(date -u -v+30d +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d '+30 days' +%Y-%m-%dT%H:%M:%SZ)"
+curl -fsS -X PATCH "$base_url/api/v1/admin/licenses/$license_id" \
+  -H "Authorization: Bearer $admin_token" \
+  -H "X-2FA-Code: $admin_2fa" \
+  -H "Content-Type: application/json" \
+  -d "$(jq -cn --arg endDate "$extension_end_date" '{endDate: $endDate}')" \
+  > "$out_dir/responses/license-extension.json"
+jq -e --arg endDate "$extension_end_date" '.endDate == $endDate' "$out_dir/responses/license-extension.json" >/dev/null
+
+curl -fsS -X POST "$base_url/api/v1/admin/licenses/$license_id/revoke" \
+  -H "Authorization: Bearer $admin_token" \
+  -H "X-2FA-Code: $admin_2fa" \
+  > "$out_dir/responses/license-revocation.json"
+jq -e '.status == "revoked"' "$out_dir/responses/license-revocation.json" >/dev/null
+curl -fsS "$status_url" > "$out_dir/responses/license-status-revoked.json"
+jq -e '.status == "revoked"' "$out_dir/responses/license-status-revoked.json" >/dev/null
 sh scripts/certification-smoke.sh "$out_dir/certification-report.json" >/dev/null
 
 cert_subject=""
@@ -82,6 +101,7 @@ jq -n \
   --arg publicationID "$publication_id" \
   --arg licenseID "$license_id" \
   --arg licenseURL "$license_url" \
+  --arg statusURL "$status_url" \
   --arg gitCommit "$git_commit" \
   --arg certPath "$cert_path" \
   --arg certSubject "$cert_subject" \
@@ -96,7 +116,8 @@ jq -n \
     demo: {
       publicationID: $publicationID,
       licenseID: $licenseID,
-      licenseURL: $licenseURL
+      licenseURL: $licenseURL,
+      statusURL: $statusURL
     },
     certificate: {
       path: $certPath,
@@ -115,6 +136,9 @@ jq -n \
       demo: "responses/demo.txt",
       lcpl: "responses/license.lcpl",
       licenseStatus: "responses/license-status.json",
+      licenseStatusRevoked: "responses/license-status-revoked.json",
+      licenseExtension: "responses/license-extension.json",
+      licenseRevocation: "responses/license-revocation.json",
       encryptedPublication: "responses/publication-content.bin"
     }
   }' > "$out_dir/manifest.json"

@@ -12,7 +12,7 @@ lcp:
   auth_file: "/srv/readium/config/htpasswd"
   database: "sqlite3://file:/srv/readium/data/lcp.sqlite?cache=shared&mode=rwc"
 lsd:
-  public_base_url: "http://127.0.0.1:8990"
+  public_base_url: "http://lsd-core:8990"
 certificate:
   cert: "/srv/readium/config/cert-edrlab-test.pem"
   private_key: "/srv/readium/config/privkey-edrlab-test.pem"

@@ -2,6 +2,7 @@
 /bin/
 /dist/
 /coverage/
+/artifacts/
 
 # Go
 *.exe

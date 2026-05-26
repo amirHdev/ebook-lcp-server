@@ -11,7 +11,8 @@ The repository can now generate a local evidence bundle with:
 - admin audit and license snapshots
 - a sample upload and license issuance trace
 - a generated `.lcpl`
-- a generated license status document
+- generated LSD license status documents before and after revocation
+- license extension and revocation response traces
 - an encrypted publication artifact
 - deployment config snapshots
 - certificate metadata when a production certificate path is supplied
@@ -28,7 +29,7 @@ For the repo-owned end-to-end path, run:
 sh scripts/e2e-readiness.sh
 ```
 
-That command starts the minimal local stack, runs the acceptance smoke checks, executes the demo flow, emits the certification smoke report, and writes a full packet under `artifacts/e2e-readiness/`.
+That command starts the minimal local stack, runs enforced acceptance and certification smoke checks, executes the demo flow, verifies LSD registration plus extension and revocation, and writes a full packet under `artifacts/e2e-readiness/`.
 
 The command writes a `certification-packet/` directory with a manifest and captured responses.
 
@@ -48,7 +49,7 @@ sh scripts/demo-local.sh
 sh scripts/certification-smoke.sh
 ```
 
-The smoke script writes `certification-report.json` with machine-readable readiness checks.
+The smoke script writes `certification-report.json` with machine-readable readiness checks and returns a failure if any required check is unsuccessful.
 
 ## Production certificate swap
 

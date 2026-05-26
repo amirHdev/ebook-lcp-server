@@ -45,7 +45,7 @@ jq -n \
         response: $ready
       },
       lcpStatus: {
-        ok: true,
+        ok: (($status.status == "ok") and (($status.processes // []) | all(.status != "failed"))),
         response: $status
       },
       adminLicenses: {
@@ -58,5 +58,10 @@ jq -n \
       }
     }
   }' > "$out"
+
+if ! jq -e '.checks | all(.[]; .ok == true)' "$out" >/dev/null; then
+  jq '.checks | to_entries[] | select(.value.ok != true)' "$out" >&2
+  exit 1
+fi
 
 echo "$out"

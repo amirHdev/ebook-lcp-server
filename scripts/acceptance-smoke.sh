@@ -10,6 +10,7 @@ publisher_username="${PUBLISHER_USERNAME:-publisher}"
 publisher_password="${PUBLISHER_PASSWORD:-publisher}"
 tenant_id="${TENANT_ID:-default}"
 guest_api_key="${GUEST_API_KEY:-guest-smoke-key}"
+book_path="${BOOK_PATH:-examples/pride-and-prejudice/pride-and-prejudice.epub}"
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT INT TERM
@@ -84,9 +85,19 @@ if [ "$tenant_put_code" != "200" ]; then
   exit 1
 fi
 
-process_body="$(jq -cn --arg title "Acceptance Smoke" --arg file "aGVsbG8=" '{title: $title, file: $file}')"
+book_b64_file="$tmpdir/acceptance-book.b64"
+process_body_file="$tmpdir/process-body.json"
+base64 < "$book_path" | tr -d '\n' > "$book_b64_file"
+jq -cn --rawfile file "$book_b64_file" \
+  '{title: "Acceptance Smoke", file: $file}' > "$process_body_file"
 process_file="$tmpdir/process.json"
-process_code="$(json_request POST /api/v1/lcp/process "$process_body" "$publisher_token" "" "" "$process_file")"
+process_code="$(
+  curl -sS -o "$process_file" -w "%{http_code}" \
+    -X POST "$base_url/api/v1/lcp/process" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $publisher_token" \
+    --data-binary "@$process_body_file"
+)"
 
 status_publisher_file="$tmpdir/status-publisher.json"
 status_publisher_code="$(json_request GET /api/v1/lcp/status "" "$publisher_token" "" "" "$status_publisher_file")"
@@ -156,5 +167,10 @@ jq -n \
       }
     }
   }' > "$out"
+
+if ! jq -e '.checks | all(.[]; .ok == true)' "$out" >/dev/null; then
+  jq '.checks | to_entries[] | select(.value.ok != true)' "$out" >&2
+  exit 1
+fi
 
 echo "$out"
