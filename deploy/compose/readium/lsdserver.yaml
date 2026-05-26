@@ -10,7 +10,7 @@ cms_access_auth:
   password: ""
 lcp:
   host: "0.0.0.0"
-  public_base_url: "http://127.0.0.1:8989"
+  public_base_url: "http://lcp-core:8989"
 lsd:
   host: "0.0.0.0"
   port: 8990
