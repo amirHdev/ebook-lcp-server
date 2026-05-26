@@ -22,6 +22,14 @@ Generate the packet:
 sh scripts/generate-certification-packet.sh
 ```
 
+For the repo-owned end-to-end path, run:
+
+```bash
+sh scripts/e2e-readiness.sh
+```
+
+That command starts the minimal local stack, runs the acceptance smoke checks, executes the demo flow, emits the certification smoke report, and writes a full packet under `artifacts/e2e-readiness/`.
+
 The command writes a `certification-packet/` directory with a manifest and captured responses.
 
 ## Evidence to collect for the official run

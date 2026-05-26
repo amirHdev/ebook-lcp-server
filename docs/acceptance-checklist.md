@@ -2,6 +2,11 @@
 
 Use this checklist for final client sign-off.
 
+Local automation:
+
+- `sh scripts/acceptance-smoke.sh` validates the API/auth checks that can run against a live local stack.
+- `sh scripts/e2e-readiness.sh` brings up the minimal compose stack, runs acceptance plus certification smoke flows, and writes artifacts under `artifacts/e2e-readiness/`.
+
 | Item | Status |
 | --- | --- |
 | `/api/v1/lcp/process` returns 200 for valid authenticated requests | Pending client test |

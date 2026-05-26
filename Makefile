@@ -1,4 +1,4 @@
-.PHONY: fmt lint test coverage vuln clean run
+.PHONY: fmt lint test coverage vuln clean run acceptance e2e
 
 COVERAGE_DIR := reports/coverage
 
@@ -19,6 +19,12 @@ vuln:
 
 run:
 	go run ./cmd/server
+
+acceptance:
+	sh scripts/acceptance-smoke.sh
+
+e2e:
+	sh scripts/e2e-readiness.sh
 
 clean:
 	go clean
