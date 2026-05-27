@@ -117,6 +117,7 @@ services:
       LCP_S3_USE_SSL: "false"
       LCP_S3_SIGNED_URL_TTL_SECONDS: "900"
       LCP_PROFILE: development
+      RATE_LIMIT_RPM: "120000"
     ports:
       - "8080:8080"
     volumes:
