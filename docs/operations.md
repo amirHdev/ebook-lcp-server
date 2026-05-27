@@ -21,7 +21,7 @@ Use k6 against an authenticated status endpoint:
 TOKEN='...' BASE_URL='http://localhost:8080' k6 run scripts/loadtest-smoke.js
 ```
 
-The current baseline is intentionally modest: `20` virtual users for `30s`, less than `1%` failed requests, and p95 below `200 ms`. Keep the numbers in version control whenever you change storage, auth, or license generation paths.
+The current baseline uses `100` virtual users for `30s`, a `0.1s` pause between requests per virtual user, less than `1%` failed requests, and p95 below `200 ms`. Override `VUS`, `DURATION`, or `REQUEST_PAUSE_SECONDS` only when recording an intentional alternate benchmark. Keep the numbers in version control whenever you change storage, auth, or license generation paths.
 
 ## Upgrade
 
