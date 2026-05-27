@@ -38,14 +38,28 @@ func OpenPostgres(ctx context.Context, dsn string) (*sql.DB, error) {
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(10)
 	db.SetConnMaxLifetime(30 * time.Minute)
-	if err := db.PingContext(ctx); err != nil {
-		defer func() {
-			if err := db.Close(); err != nil {
-				log.Printf("close rows: %v", err)
+
+	const maxConnectionAttempts = 30
+	for attempt := 1; attempt <= maxConnectionAttempts; attempt++ {
+		if err := db.PingContext(ctx); err == nil {
+			return db, nil
+		} else if attempt == maxConnectionAttempts {
+			if closeErr := db.Close(); closeErr != nil {
+				log.Printf("close rows: %v", closeErr)
 			}
-		}()
-		return nil, err
+			return nil, err
+		}
+
+		select {
+		case <-ctx.Done():
+			if closeErr := db.Close(); closeErr != nil {
+				log.Printf("close rows: %v", closeErr)
+			}
+			return nil, ctx.Err()
+		case <-time.After(time.Second):
+		}
 	}
+
 	return db, nil
 }
 
@@ -53,6 +67,21 @@ func EnsurePostgresSchema(ctx context.Context, db *sql.DB) error {
 	if db == nil {
 		return nil
 	}
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	// Serialize startup migrations when multiple application replicas boot together.
+	const schemaLockID int64 = 7243801180571440752
+	if _, err := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock($1)`, schemaLockID); err != nil {
+		return err
+	}
+
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS users (
 			id VARCHAR(36) PRIMARY KEY,
@@ -135,11 +164,11 @@ func EnsurePostgresSchema(ctx context.Context, db *sql.DB) error {
 		`ALTER TABLE licenses DROP CONSTRAINT IF EXISTS licenses_user_id_fkey`,
 	}
 	for _, stmt := range stmts {
-		if _, err := db.ExecContext(ctx, stmt); err != nil {
+		if _, err := tx.ExecContext(ctx, stmt); err != nil {
 			return err
 		}
 	}
-	return nil
+	return tx.Commit()
 }
 
 func NewPostgresPublicationRepository(db *sql.DB) PublicationRepository {

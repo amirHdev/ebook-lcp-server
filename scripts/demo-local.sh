@@ -3,13 +3,20 @@ set -eu
 
 base_url="${BASE_URL:-http://localhost:8080}"
 book_path="${BOOK_PATH:-examples/pride-and-prejudice/pride-and-prejudice.epub}"
+admin_username="${ADMIN_USERNAME:-admin}"
+admin_password="${ADMIN_PASSWORD:-admin}"
+admin_2fa="${ADMIN_2FA_CODE:-123456}"
 book_b64_file="$(mktemp)"
 trap 'rm -f "$book_b64_file"' EXIT INT TERM
 
 token="$(
   curl -fsS "$base_url/api/v1/auth/login" \
     -H "Content-Type: application/json" \
-    -d '{"username":"admin","password":"admin","twoFactor":"123456"}' |
+    -d "$(jq -cn \
+      --arg username "$admin_username" \
+      --arg password "$admin_password" \
+      --arg twoFactor "$admin_2fa" \
+      '{username: $username, password: $password, twoFactor: $twoFactor}')" |
     jq -r .token
 )"
 

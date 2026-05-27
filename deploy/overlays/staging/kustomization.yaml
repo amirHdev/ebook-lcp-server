@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: lcp-staging
 resources:
   - ../../k8s
+  - status-ingress.yaml
 images:
   - name: registry.example.com/lcp/lcp-server
     newName: registry.yourdomain.com:5000/lcp-server

@@ -17,12 +17,12 @@ Local automation:
 | PostgreSQL migrations apply successfully | Evidenced by E2E Readiness artifacts |
 | Docker backend image builds | Enforced by E2E Readiness |
 | Docker frontend image builds | Enforced by E2E Readiness |
-| Kubernetes Deployment, Service, Ingress, ConfigMap, Secret apply | Pending cluster |
-| HPA scales backend pods by CPU/memory | Pending cluster |
-| NetworkPolicy is active | Pending cluster |
-| Prometheus scrapes `/metrics` | Pending cluster |
-| Daily backup CronJob exists | Pending cluster |
+| Kubernetes Deployment, Service, Ingress, ConfigMap, Secret apply | Verified on local Minikube (2026-05-27) |
+| HPA scales backend pods by CPU/memory | Verified on local Minikube (2026-05-27) |
+| NetworkPolicy is active | Verified on local Minikube (2026-05-27) |
+| Prometheus scrapes `/metrics` | Verified on local Minikube (2026-05-27) |
+| Daily backup CronJob exists | Verified on local Minikube (2026-05-27) |
 | Trivy scan has no critical findings | Enforced by CI |
-| k6 p95 response time is below 200 ms with 100 VUs | Pending load environment |
+| k6 p95 response time is below 200 ms with 100 VUs | Verified on local Minikube (2026-05-27) |
 
-The automated statuses above describe repository gates. Production certificate validation, reader validation, cluster checks, load testing, and official EDRLab certification remain external acceptance work.
+The automated statuses above describe repository gates. Local Minikube validation is evidence of deployability, not production sign-off. Production certificate validation, reader validation, production-cluster checks, production load testing, and official EDRLab certification remain external acceptance work.

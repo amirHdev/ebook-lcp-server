@@ -26,7 +26,9 @@ services:
     entrypoint: ["/bin/sh"]
     command:
       - -c
-      - sh /srv/lcp/scripts/compose/prepare-readium-config.sh && exec /usr/local/bin/lcpserver
+      - >-
+        sh /srv/lcp/scripts/compose/prepare-readium-config.sh &&
+        exec /usr/local/bin/lcpserver
     environment:
       READIUM_LCPSERVER_CONFIG: /srv/readium/source/lcpserver.yaml
     ports:
@@ -43,7 +45,9 @@ services:
     entrypoint: ["/bin/sh"]
     command:
       - -c
-      - sh /srv/lcp/scripts/compose/prepare-readium-config.sh && exec /usr/local/bin/lsdserver
+      - >-
+        sh /srv/lcp/scripts/compose/prepare-readium-config.sh &&
+        exec /usr/local/bin/lsdserver
     environment:
       READIUM_LSDSERVER_CONFIG: /srv/readium/source/lsdserver.yaml
     ports:

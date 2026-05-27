@@ -3,6 +3,21 @@ set -eu
 
 KUSTOMIZE="${KUSTOMIZE:-kustomize}"
 
+render_kustomization() {
+  if command -v "${KUSTOMIZE}" >/dev/null 2>&1; then
+    "${KUSTOMIZE}" build "$1"
+    return
+  fi
+
+  if command -v kubectl >/dev/null 2>&1; then
+    kubectl kustomize "$1"
+    return
+  fi
+
+  echo "kustomize or kubectl is required to render Kubernetes resources" >&2
+  exit 1
+}
+
 go test ./...
 go vet ./...
 go build -buildvcs=false ./...
@@ -17,6 +32,7 @@ go build -buildvcs=false ./...
 
 yamllint -c .yamllint.yml \
   deploy/k8s \
+  deploy/overlays \
   deploy/argocd \
   docker-compose.yml \
   deploy/monitoring/prometheus.yml \
@@ -24,7 +40,7 @@ yamllint -c .yamllint.yml \
   .gitlab-ci.yml
 
 for env in dev staging prod; do
-  "${KUSTOMIZE}" build "deploy/overlays/${env}" >/dev/null
+  render_kustomization "deploy/overlays/${env}" >/dev/null
 done
 
-"${KUSTOMIZE}" build deploy/argocd/apps >/dev/null
+render_kustomization deploy/argocd/apps >/dev/null

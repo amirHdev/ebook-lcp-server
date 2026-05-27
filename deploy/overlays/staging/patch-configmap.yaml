@@ -7,3 +7,4 @@ data:
   PUBLIC_BASE_URL: https://staging.yourdomain.com
   LCP_PROVIDER_URI: https://staging.yourdomain.com
   STATUS_BASE_URL: https://status.yourdomain.com
+  RATE_LIMIT_RPM: "120000"

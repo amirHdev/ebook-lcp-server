@@ -10,4 +10,5 @@
 ## Notes
 
 - Deployment guides are complete under `docs/deploy.md`, `docs/deploy-flyio.md`, and `docs/deploy-railway.md`.
+- Kubernetes deployment, HPA, NetworkPolicy, metrics, backup/restore, license lifecycle, and 100-VU load behavior were validated on local Minikube on 2026-05-27; production sign-off remains external.
 - The immediate product focus is adoption first, then operator ergonomics, then certification, broader client support, and visible community momentum.
