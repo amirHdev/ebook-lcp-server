@@ -8,7 +8,7 @@ Security updates are provided for the latest version on the `main` branch.
 
 | Version | Supported |
 | ------- | --------- |
-| main / latest | ✅ |
+| main / v2.1.0 | ✅ |
 | older versions | ❌ |
 
 ---
