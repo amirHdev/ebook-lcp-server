@@ -4,7 +4,7 @@ go 1.26.3
 
 require (
 	github.com/jackc/pgx/v5 v5.10.0
-	github.com/minio/minio-go/v7 v7.2.0
+	github.com/minio/minio-go/v7 v7.2.1
 )
 
 require (
